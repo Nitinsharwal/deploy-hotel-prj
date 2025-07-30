@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  {% block head %}
+  {% endblock head %}
+<style>
+  footer {
+    background-color: #333;
+    color: #fff;
+    padding: 30px 20px;
+    font-size: 0.9em;
+    border-top: 5px solid #007bff;
+}
+
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 30px;
+}
+
+.footer-section {
+    flex: 1;
+    min-width: 250px;
+    padding: 15px;
+}
+
+.footer-section h2 {
+    color: #007bff;
+    font-size: 1.3em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+    display: inline-block;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 8px;
+}
+
+.footer-section ul li a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+    color: #007bff;
+}
+
+.footer-section.contact p {
+    margin-bottom: 8px;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #555;
+    font-size: 0.85em;
+    color: #bbb;
+}
+
+@media (max-width: 768px) {
+    .footer-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .footer-section {
+        width: 90%;
+        min-width: unset;
+        text-align: center;
+    }
+
+    .footer-section h2 {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    footer {
+        padding: 20px 15px;
+    }
+
+    .footer-section h2 {
+        font-size: 1.2em;
+    }
+
+    .footer-section ul li,
+    .footer-section.contact p {
+        font-size: 0.9em;
+    }
+}
+</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="{% static "hotel_app/images/logohootel.png" %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static "hotel_app/css/style.css" %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <title> {% block title %}Home{% endblock title %} </title>
+</head>
+
+<body>
+{% load static %}
+    <nav class="navbar" style="background-color:rgb(53, 50, 50)">
+        <a href="{% url 'ven_dashboard' %}" class="logo"><img src="{% static "hotel_app/images/hotel_logo.png" %}" alt="logo"></a>
+        <span class="menu-toggle" onclick="toggleMenu()">☰</span>
+        <ul id="nav-links">
+          <li><a href="{% url 'ven_dashboard' %}">Dashboard</a></li>
+          <li>
+            <form method="POST">
+              <button style="background-color:rgb(53, 50, 50); border: none;">
+                <a href="{% url 'add_hotel' %}">Add Hotels</a>
+              </button>
+            </form>
+          </li>
+          {% if request.user.is_authenticated %}
+          <li><a href="{% url 'vendor_logout' %}">Logout</a></li>
+        {% else %}
+          <li><a href="{% url 'vendor_login' %}">Login</a></li>
+        {% endif %}
+          <li><a href="{% url 'vendor_register' %}">Register</a></li>
+        </ul>
+    </nav>
+{% include "alert.html" %}
+  {% block body %}
+  {% endblock %}
+  <script src="{% static "hotel_app/JS/script.js" %}"></script>
+</body>
+<footer>
+  <div class="footer-container">
+    <div class="footer-section links">
+      <h2>Quick Links</h2>
+      <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'about' %}">About me</a></li>
+        <li><a href="{% url 'vendor_register' %}">Vendor register</a></li>
+        <li><a href="{% url 'vendor_login' %}">Vendor login</a></li>
+        <li><a target="_blank" href="https://chetan-sharwal-portfolio.netlify.app/">Portfolio</a></li>
+        <li><a href="{% url 'contact' %}">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section contact">
+      <h2>Contact</h2>
+      <p>Email: nitinparjapat94.com</p>
+      <p>Phone: +91 8221985564</p>
+      <p>Location: Panipat, Haryana, India</p>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    &copy; 2025 Noma | All Rights Reserved
+  </div>
+</footer>
+</html>

@@ -1,0 +1,92 @@
+{% extends "vendor/ven_base.html" %}
+{% load static %}
+{% block head %}
+<style>
+    .upload {
+  background-color: #f9fafb;
+  padding: 30px;
+  max-width: 480px;
+  margin: 40px auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.688);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.upload h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  color: #1e3a8a;
+  margin-bottom: 20px;
+}
+
+.upload label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.upload input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #3b82f6;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.3s ease-in-out;
+}
+
+.upload input[type="file"]:hover {
+  border-color: #2563eb;
+  
+}
+.btn-upload {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.btn-upload:hover {
+  background-color: #2563eb;
+}
+
+@media (max-width: 600px) {
+
+    .upload input{
+        max-width: 288px;
+    }
+  .upload {
+    padding: 20px;
+    margin: 20px;
+  }
+
+  .upload h2 {
+    font-size: 1.25rem;
+  }
+}
+
+</style>
+{% endblock head %}
+{% block body %}
+<div>
+{% for image in images %}
+<img src="/media/{{image.image}}" alt="hotelimage" style="width: 200px; border-radius: 10px; margin: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.688);">
+<a href="{% url "delete_images" image.id %}" style="text-decoration: none;" ><button>Delete</button></a>
+{% endfor %}
+</div>
+<form class="upload" enctype="multipart/form-data" method="POST">
+    <h2>Add image</h2>
+    {% csrf_token %}
+    <label for="image">Add image</label>
+    <input type="file" id="image" name="image" required>
+    <button type="submit" class="btn-upload">Upload</button>
+
+</form>
+{% endblock %}

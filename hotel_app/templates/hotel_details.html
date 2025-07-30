@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+
+<style>
+.booking_form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 400px;
+  margin: 100px auto; /* centers horizontally and gives top spacing */
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.booking_form label,
+.booking_form input,
+.booking_form button {
+  width: 100%;
+}
+
+.booking_form input {
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+ .book_now{
+  padding: 12px 24px;
+  font-size: 16px;
+  color: aliceblue;
+  background-color: rgb(187, 25, 25);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;}
+
+  label{
+    margin-bottom:10px;
+  }
+</style>
+{% endblock head %}
+{% block body %}
+<h1>{{ hotel.hotel_name }} – Hotel Details</h1>
+
+<div style="margin: 20px 0px 20px 20px;">
+  {% if hotel.hotel_images.first.image %}
+    <img style="max-width: 300px;" src="/media/{{ hotel.hotel_images.first.image }}" alt="{{ hotel.hotel_name }}">
+  {% else %}
+    <img style="max-width:231px" src="{% static 'hotel_app/images/no_image.jpg' %}" alt="{{ hotel.hotel_name }}">
+  {% endif %}
+
+  <div class="info">
+    <h3>{{ hotel.hotel_name }} – ₹ {{ hotel.hotel_price }}/-</h3>
+    <h4>Discount: ₹ {{ hotel.hotel_offer_price }} /-</h4>
+
+    {% for amenity in hotel.hotel_aminities.all %}
+      <span class="amenity-badge">{{ amenity.amenities_name }}</span>
+    {% endfor %}
+
+    <hr>
+    <p><b>📍Location: {{ hotel.hotel_location }}</b><br><br><b>Desc:</b> {{ hotel.hotel_description | safe }}</p>
+  </div>
+  {% if request.user.is_authenticated %}
+  <h2>Fill The below details to Book hotel</h2>
+  <form method="POST" class="booking_form">
+    {% csrf_token %}
+    <h3>Fill This booking form</h3>
+
+    <label for="customer_fname">Firstname</label>
+    <input type="text" id="customer_fname" name="customer_fname" placeholder="Enter your firstname" >
+    <label for="customer_lname">Lastname</label>
+    <input type="text" id="customer_lname" name="customer_lname" placeholder="Enter your lastname" >
+    <label for="customer_email">E-mail</label>
+    <input type="text" id="customer_email" name="customer_email" placeholder="Enter your email" >
+    <label for="customer_email">Enter payment</label>
+    <input type="number" id="payment" name="payment" placeholder="Enter payment" >
+    <label for="start_date">Start Date</label>
+    <input type="date" id="start_date" name="start_date" required>
+    <label for="end_date">End Date</label>
+    <input type="date" id="end_date" name="end_date" required>
+    <a href="#" style="text-decoration: none; "><button type="submit" class="book_now">Book Now</button></a>
+  </form>
+  
+  {% else %}
+  <a href="{% url "login_page" %}" style="text-decoration: none;"><button class="btn btn-success">Login</button></a>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="login-wrapper">
+    <form class="login-form" method="POST">
+      <h2>Login</h2>
+      {% csrf_token %}
+      <label for="password">Enter OTP</label>
+      <div class="pass" style="position: relative;">
+        <input type="text" id="otp" name="otp" placeholder="Enter your otp" required >
+        <i class="fa-solid fa-eye" id="togglePassword" style="position: absolute; left: 390px; top: 32%; transform: translateY(-50%); cursor: pointer;"></i>
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+{% endblock %}

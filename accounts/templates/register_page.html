@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="login-wrapper " style="background-color: antiquewhite;">
+    <form class="login-form" method="POST">
+      <a href="{% url "vendor_register" %}" style="color: rgb(0, 0, 0); text-decoration: none;margin: 0px 0px -12px 260px">Register as Vendor</a>
+      <h2>Register</h2>
+      {% csrf_token %}
+      <label for="firstname">Firstname</label>
+      <input type="text" id="firstname" name="firstname" placeholder="Enter your firstname" >
+      <label for="lastname">Lastname</label>
+      <input type="text" id="lastname" name="lastname" placeholder="Enter your lastname" >
+      <label for="phone_number">Phone Number</label>
+      <input type="text" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      <label for="password">Password (*Use 8 Digit password)</label>
+      <div class="pass" style="position: relative;">
+        <input type="password" id="password" name="password" placeholder="Enter your password" required >
+        <i class="fa-solid fa-eye" id="togglePassword" style="position: absolute; left: 390px; top: 32%; transform: translateY(-50%); cursor: pointer;"></i>
+      </div>
+        <p style="font-style: italic;">Already have an Account? <a style="margin-left: 62px; font-weight: bold; color: rgb(0, 0, 0); text-decoration: none; " href="{% url 'login_page' %}">Login</a></p>
+      <button type="submit">Register</button>
+    </form>
+</div> 
+{% endblock %}

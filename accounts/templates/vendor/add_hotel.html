@@ -1,0 +1,77 @@
+{% extends "vendor/ven_base.html" %}
+{% load static %}
+{% block head %}
+<style>
+  .checkboxes {
+    display: flex;
+    flex-direction: column;
+    margin-top: 1px;
+  }
+
+  .checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    color: #333;
+    font-weight: normal;
+    cursor: pointer;
+  }
+  .checkboxes input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+    summary {
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      outline: none;
+    }
+    details {
+      width: 250px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+      .messagearea {
+          max-width: 280px;
+      }
+  }
+</style>
+{% endblock head %}
+{% block body %}
+<h3 style="margin: 0px 0px -4px 4px; text-align: center;">What's on your Mind add hotels ?</h3>
+<h2 style="margin: 15px 0px 0px 15px;" class="section-title">Add Hotels for best advertisement</h2>
+<div class="login-wrapper">
+  <form class="login-form" style="max-width: 600px;" method="POST">
+    <h2 style="color: rgb(251, 163, 0);">Add Hotel Details</h2>
+    {% csrf_token %}
+    <label for="hotel_name">Hotel name</label>
+    <input type="text" id="hotel_name" name="hotel_name" placeholder="Enter your hotel name">
+    <details>
+      <summary>Select Activities ▾</summary>
+      <div class="checkboxes" >
+        {% for aminitie in Amenities %}
+        <label><input type="checkbox" name="hotel_aminities" value="{{aminitie.id}}"> {{aminitie.amenities_name}}</label>
+        {% endfor %}
+      </div>
+    </details>
+    <label for="price">Hotel Price</label>
+    <input type="number" id="price" name="hotel_price" placeholder="Enter your hotel price" required>
+    <label for="offer_price">Hotel offer Price</label>
+    <input type="number" id="offer_price" name="hotel_offer_price" placeholder="Enter your hotel offer price" required>
+    {% comment %} <label for="hotel_image">Hotel Image</label>
+    <input type="file" id="hotel_image" name="hotel_image"> {% endcomment %}
+    <label for="description">Description</label>
+    <textarea class="messagearea" id="description" style="height: 37px; width: 615px;" rows="4" name="hotel_description"
+      required></textarea>
+    <label for="location">Location</label>
+    <input type="text" id="location" name="hotel_location" placeholder="Enter your hotel  location" required>
+    <button type="submit">Save</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="login-wrapper">
+    <form class="login-form" method="POST">
+      <h2>Login</h2>
+      {% csrf_token %}
+      <label for="email">E-mail</label>
+      <input type="text" id="email" name="email" placeholder="Enter your email" required>
+
+      <label for="password">Password</label>
+      <div class="pass" style="position: relative;">
+        <input type="password" id="password" name="password" placeholder="Enter your password" required >
+        <i class="fa-solid fa-eye" id="togglePassword" style="position: absolute; left: 390px; top: 32%; transform: translateY(-50%); cursor: pointer;"></i>
+      </div>
+      
+      <p style="font-weight: bold;">Haven't Register? <a href="{% url 'register_page' %}" style="margin-left: 62px; font-weight: bold; text-decoration: none; color: rgb(0, 0, 0);">Register</a></p>
+      <button type="submit">Login</button>
+      <button type="button" onclick="send_otp()">Login with OTP</button>
+    </form>
+
+    <script>
+      function send_otp(email){
+        var email = document.getElementById('email').value
+        if(email==""){
+          alert("E-mail not be empty")
+          return;
+        }
+        const encodedEmail = encodeURIComponent(email);
+        window.location.href = `/account/send_otp/${encodedEmail}/`;
+      }
+    </script>
+  </div>
+{% endblock %}

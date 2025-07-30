@@ -1,0 +1,16 @@
+{% load static %}
+<nav class="navbar">
+    <a href="{% url 'home' %}" class="logo"><img src="{% static "hotel_app/images/hotel_logo.png" %}" alt="logo"></a>
+    <span class="menu-toggle" onclick="toggleMenu()">☰</span>
+    <ul id="nav-links">
+      <li><a href="{% url 'home' %}">Home</a></li>
+      <li><a href="{% url 'about' %}">About</a></li>
+      <li><a href="{% url 'contact' %}">Contact Us</a></li>
+      {% if request.user.is_authenticated %}
+      <li><a href="{% url 'logout_user' %}">Logout</a></li>
+    {% else %}
+      <li><a href="{% url 'login_page' %}">Login</a></li>
+    {% endif %}
+      <li><a href="{% url 'register_page' %}">Register</a></li>
+    </ul>
+</nav>

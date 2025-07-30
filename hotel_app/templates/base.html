@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+  {% block head %}{% endblock head %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="{% static "hotel_app/images/logohootel.png" %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static "hotel_app/css/style.css" %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <title> {% block title %}Home{% endblock title %} </title>
+</head>
+
+<body>
+{% include "navbar.html" %}
+{% include "alert.html" %}
+  {% block body %}
+  {% endblock %}
+  <script src="{% static "hotel_app/JS/script.js" %}"></script>
+</body>
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-section about">
+      <h2>About Us</h2>
+      <p>
+        I create innovative web solutions to help businesses grow and thrive.
+      </p>
+    </div>
+
+    <div class="footer-section links">
+      <h2>Quick Links</h2>
+      <ul>
+        <li><a href="{% url "home" %}">Home</a></li>
+        <li><a href="{% url "about" %}">About me</a></li>
+        <li><a href="{% url "vendor_register" %}">Vendor register</a></li>
+        <li><a href="{% url "vendor_login" %}">Vendor login</a></li>
+        <li><a target="_blank" href="https://chetan-sharwal-portfolio.netlify.app/">Portfolio</a></li>
+        <li><a href="{% url "contact" %}">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section contact">
+      <h2>Contact</h2>
+      <p>Email: nitinparjapat94.com</p>
+      <p>Phone: +91 8221985564</p>
+      <p>Location: Panipat, Haryana, India</p>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    &copy; 2025 Noma | All Rights Reserved
+  </div>
+</footer>
+</html>

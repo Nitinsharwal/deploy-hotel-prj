@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="login-wrapper">
+    <form class="login-form" method="POST">
+      <h2 style="color: rgb(251, 163, 0);">Contact US</h2>
+      {% csrf_token %}
+      <label for="firstname">Firstname</label>
+      <input type="text" id="firstname" name="firstname" placeholder="Enter your firstname">
+      <label for="lastname">Lastname</label>
+      <input type="text" id="lastname" name="lastname" placeholder="Enter your lastname">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      <label for="message">Message</label>
+      <textarea   class="messagearea" id="message" style="height: 37px; width: 418px;" rows="3" name="desc" required></textarea>
+      <button type="submit">Sent</button>
+    </form>
+</div> 
+{% endblock %}
