@@ -21,7 +21,7 @@ def createHotel():
     vendors = list(hotel_vendor.objects.all())
     amenities_list = list(amenities.objects.all())
 
-    for _ in range(30):
+    for _ in range(19):
         Hotel_vendor = choice(vendors) 
         hotel = hotels.objects.create(
             hotel_name=fake.company(),

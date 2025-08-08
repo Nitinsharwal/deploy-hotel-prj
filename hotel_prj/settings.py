@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7rwndw#hwmeti5^2j-8rw!j0b5lke#pmws)a7e^399nrmglpfr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['.vercel.app','127.0.0.1','.now.sh']
 
 
 # Application definition
@@ -77,26 +77,26 @@ WSGI_APPLICATION = 'hotel_prj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
-
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hotel_db',  
-        'USER': 'root',     
-        'PASSWORD': '', 
-        'HOST': 'localhost',
-        'PORT': '3306',                 
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'hotel_db',  
+#         'USER': 'root',     
+#         'PASSWORD': '', 
+#         'HOST': 'localhost',
+#         'PORT': '3306',                 
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
