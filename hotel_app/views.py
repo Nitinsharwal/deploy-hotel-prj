@@ -9,7 +9,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from accounts.utils import *
 
-@login_required(login_url='/account/login_page/')
+# @login_required(login_url='/account/login_page/')
 def home(request):
     Hotel = hotels.objects.all()
     search_query = request.GET.get('search')
