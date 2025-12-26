@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'hotel_prj.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hotel_db',  
+        'NAME': 'railway',  
         'USER': 'root',     
-        'PASSWORD': '', 
-        'HOST': 'localhost',
-        'PORT': '3306',                 
+        'PASSWORD': 'aYWoeGoewzURHjslnpVxEEEwHVLtUPOq', 
+        'HOST': 'hopper.proxy.rlwy.net',
+        'PORT': '31007',                 
     }
 }
 
