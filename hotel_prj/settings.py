@@ -92,9 +92,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'railway',  
         'USER': 'root',     
-        'PASSWORD': 'aYWoeGoewzURHjslnpVxEEEwHVLtUPOq', 
-        'HOST': 'hopper.proxy.rlwy.net',
-        'PORT': '31007',                 
+        'PASSWORD': 'kVnBPTqofnnWVbJthuWXQSUklXZgCVac', 
+        'HOST': 'tramway.proxy.rlwy.net',
+        'PORT': '56857',                 
     }
 }
 
