@@ -1,9 +1,9 @@
-
 set -e
-python3 -m pip install -r requirements.txt
 
-python3 manage.py collectstatic --noinput
+echo "Installing dependencies..."
+pip install -r requirements.txt --target .vercel/python
 
-mkdir -p staticfiles_build
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
 
-cp -r staticfiles_build/static/* staticfiles_build/ || echo "No static files found."
+echo "Build completed successfully"
