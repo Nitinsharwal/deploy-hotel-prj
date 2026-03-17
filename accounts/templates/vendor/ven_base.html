@@ -116,18 +116,15 @@
 
 <body>
 {% load static %}
-    <nav class="navbar" style="background-color:rgb(53, 50, 50)">
-        <a href="{% url 'ven_dashboard' %}" class="logo"><img src="{% static "hotel_app/images/hotel_logo.png" %}" alt="logo"></a>
+    <nav class="navbar vendor-nav">
+        <a href="{% url 'ven_dashboard' %}" class="logo">
+          <span class="brand-mark">N</span>
+          <span class="brand-text">Vendor</span>
+        </a>
         <span class="menu-toggle" onclick="toggleMenu()">☰</span>
         <ul id="nav-links">
           <li><a href="{% url 'ven_dashboard' %}">Dashboard</a></li>
-          <li>
-            <form method="POST">
-              <button style="background-color:rgb(53, 50, 50); border: none;">
-                <a href="{% url 'add_hotel' %}">Add Hotels</a>
-              </button>
-            </form>
-          </li>
+          <li><a href="{% url 'add_hotel' %}">Add Hotels</a></li>
           {% if request.user.is_authenticated %}
           <li><a href="{% url 'vendor_logout' %}">Logout</a></li>
         {% else %}

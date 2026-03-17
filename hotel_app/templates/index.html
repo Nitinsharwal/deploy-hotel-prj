@@ -1,41 +1,94 @@
 {% extends "base.html" %}
 {% load static %}
 {% block body %}
-<h1>Best Hotels with best offer price</h1>
-<form method="GET" class="search-sort-container">
-  <input type="text" name="search" id="searchInput" placeholder="Search hotels...">
-  <button type="submit" id="searchBtn" style="cursor: pointer;">Search</button>
+<section class="hero">
+  <div>
+    <p class="eyebrow">Handpicked stays</p>
+    <h1>Stay better. Exclusive rates. Instant booking.</h1>
+    <p class="muted hero-sub">Browse curated hotels with transparent pricing, beautiful rooms, and amenities you’ll love.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#explore">Explore stays</a>
+      <a class="btn-secondary" href="{% url 'register_page' %}">Join free</a>
+    </div>
+    <div class="hero-stats">
+      <div class="pill"><strong>{{ Hotel.count }}</strong><span>Hotels listed</span></div>
+      <div class="pill"><strong>Instant</strong><span>Booking confirmation</span></div>
+      <div class="pill"><strong>Secure</strong><span>Payments & OTP</span></div>
+    </div>
+  </div>
+  <div class="hero-card">
+    <div class="hero-illustration">
+      <div class="orb"></div>
+      <img src="{% static 'hotel_app/images/hotel4.jpeg' %}" alt="Hotel preview">
+    </div>
+  </div>
+</section>
 
-  <select style="max-width: 110px; cursor: pointer;" id="sortBy" name="sort">
-    <option value="">Sort By</option>
-    <option value="low">Price: Low to High</option>
-    <option value="high">Price: High to Low</option>
-  </select>
+<form method="GET" class="search-shell" id="explore">
+  <div class="search-input">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="search" id="searchInput" value="{{ request.GET.search }}" placeholder="Search by hotel or city...">
+  </div>
+  <div class="search-filters">
+    <label class="select-wrap">
+      <span>Sort</span>
+      <select id="sortBy" name="sort">
+        <option value="">Recommended</option>
+        <option value="low" {% if request.GET.sort == 'low' %}selected{% endif %}>Price: Low to High</option>
+        <option value="high" {% if request.GET.sort == 'high' %}selected{% endif %}>Price: High to Low</option>
+      </select>
+    </label>
+    <button type="submit" id="searchBtn" class="btn-primary">Search</button>
+  </div>
 </form>
 
+<div class="filter-chips">
+  <span class="chip">Free Wi‑Fi</span>
+  <span class="chip">Gym</span>
+  <span class="chip">Pool</span>
+  <span class="chip">Breakfast</span>
+  <span class="chip">Parking</span>
+</div>
+
 <div class="restaurant-slider">
-    {% for hotel in Hotel %}
-    <a style="text-decoration: none;" href="{% url "hotel_details" hotel.hotel_slug %}">
-      <div class="restaurant-card">
+  {% for hotel in Hotel %}
+  <a href="{% url "hotel_details" hotel.hotel_slug %}" class="card-link">
+    <div class="hotel-card">
+      <div class="hotel-media">
         {% if hotel.hotel_images.first and hotel.hotel_images.first.image %}
-        <img src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
-    {% else %}
-        <img style="max-width:231px" src="{% static "hotel_app/images/no_image.jpg" %}" alt="{{ hotel.hotel_name }}">
-    {% endif %}
-        <hr>
-        <div class="info">
-          <h3>{{ hotel.hotel_name }} – ₹ {{ hotel.hotel_price }}/-</h3>
-          <h4>Discount: ₹ {{ hotel.hotel_offer_price }} /-</h4>
-          <h2>Facilities</h2>
-          {% for amenetie in hotel.hotel_aminities.all %}
-            <span class="amenity-badge">{{ amenetie.amenities_name }}</span>
-          {% endfor %}
-          <div style="display:flex;justify-content:center; margin: 10px 0px 10px;">
-            <button style="background:red;color:white;border:none;padding:8px 16px;border-radius:5px;cursor:pointer;">Book Now</button>
+          <img src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
+        {% else %}
+          <img src="{% static "hotel_app/images/no_image.jpg" %}" alt="{{ hotel.hotel_name }}">
+        {% endif %}
+        <div class="media-overlay">
+          <div class="hotel-name">{{ hotel.hotel_name }}</div>
+          <div class="hotel-location">📍 {{ hotel.hotel_location|truncatechars:38 }}</div>
+        </div>
+        <div class="media-badge">Offer ₹ {{ hotel.hotel_offer_price }}</div>
+      </div>
+      <div class="hotel-body">
+        <div class="price-row">
+          <div>
+            <span class="price-current">₹ {{ hotel.hotel_offer_price }}</span>
+            <span class="price-old">₹ {{ hotel.hotel_price }}</span>
           </div>
+          <span class="pill success">Instant confirm</span>
+        </div>
+        <p class="muted two-lines">{{ hotel.hotel_description|truncatechars:110 }}</p>
+        <div class="amenity-row">
+          {% for amenity in hotel.hotel_amenities.all|slice:":4" %}
+            <span class="amenity-badge">{{ amenity.amenities_name }}</span>
+          {% endfor %}
+        </div>
+        <div class="card-actions">
+          <span class="night-note">per night</span>
+          <span class="btn-pill">View details</span>
         </div>
       </div>
-    </a>
-    {% endfor %}
-  </div>
+    </div>
+  </a>
+  {% empty %}
+    <p style="padding: 12px 18px;">No hotels found. Try a different search.</p>
+  {% endfor %}
+</div>
 {% endblock %}

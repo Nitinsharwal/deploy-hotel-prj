@@ -1,34 +1,53 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock %}
 {% block body %}
-<div class="login-wrapper">
-    <form class="login-form" method="POST">
-      <h2>Login</h2>
-      {% csrf_token %}
-      <label for="email">E-mail</label>
-      <input type="text" id="email" name="email" placeholder="Enter your email" required>
-
-      <label for="password">Password</label>
-      <div class="pass" style="position: relative;">
-        <input type="password" id="password" name="password" placeholder="Enter your password" required >
-        <i class="fa-solid fa-eye" id="togglePassword" style="position: absolute; left: 390px; top: 32%; transform: translateY(-50%); cursor: pointer;"></i>
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Welcome back</p>
+      <h2>Sign in to continue</h2>
+      <p class="muted">Secure login to manage your bookings and dashboard.</p>
+      <div class="hint-box">
+        <span class="dot"></span>
+        <div>
+          <strong>Tip:</strong> You can also use an OTP if you prefer not to enter your password.
+        </div>
       </div>
-      
-      <p style="font-weight: bold;">Haven't Register? <a href="{% url 'register_page' %}" style="margin-left: 62px; font-weight: bold; text-decoration: none; color: rgb(0, 0, 0);">Register</a></p>
-      <button type="submit">Login</button>
-      <button type="button" onclick="send_otp()">Login with OTP</button>
+    </div>
+    <form class="auth-form" method="POST">
+      {% csrf_token %}
+      <label class="form-field">
+        <span>Email</span>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </label>
+      <label class="form-field">
+        <span>Password</span>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          <i class="fa-solid fa-eye toggle-password" data-target="password" aria-label="Toggle password visibility"></i>
+        </div>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Login</button>
+        <button type="button" class="btn-secondary" onclick="send_otp()">Login with OTP</button>
+      </div>
+      <p class="switch-link">New here?
+        <a href="{% url 'register_page' %}">Create an account</a>
+      </p>
     </form>
-
-    <script>
-      function send_otp(email){
-        var email = document.getElementById('email').value
-        if(email==""){
-          alert("E-mail not be empty")
-          return;
-        }
-        const encodedEmail = encodeURIComponent(email);
-        window.location.href = `/account/send_otp/${encodedEmail}/`;
-      }
-    </script>
   </div>
+</section>
+
+<script>
+  function send_otp(){
+    const email = document.getElementById('email').value;
+    if(!email){
+      alert("Please enter your email first.");
+      return;
+    }
+    const encodedEmail = encodeURIComponent(email);
+    window.location.href = `/account/send_otp/${encodedEmail}/`;
+  }
+
+</script>
 {% endblock %}

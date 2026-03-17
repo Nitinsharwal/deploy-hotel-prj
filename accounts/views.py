@@ -1,46 +1,46 @@
-from django.shortcuts import render,redirect,HttpResponse
-from .models import hotel_owner, hotel_vendor, hotels, amenities, hotel_images,customers
+from django.shortcuts import render, redirect, HttpResponse
 from django.db.models import Q
 from django.contrib import messages
-from .utils import *
-from django.contrib.auth import  authenticate,login,logout
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .utils import generateSlug
-from django.http import  HttpResponseRedirect
+from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
 import random
+
 from hotel_app.views import *
+from .models import hotel_owner, hotel_vendor, hotels, amenities, hotel_images, customers
+from .utils import generateSlug, random_token, sendEmail, sendOtp, sendCustomer
 
 def logout_user(request):
     logout(request)
     return redirect('login_page')
 
 def login_page(request):
-    if request.method=="POST":
+    if request.method == "POST":
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
-        Hotel_Owner = hotel_owner.objects.filter(email =  email)
 
-        if not Hotel_Owner.exists():
-            messages.error(request,"Account Not Found..!!")
+        owner_qs = hotel_owner.objects.select_related('user').filter(user__email=email)
+        if not owner_qs.exists():
+            messages.error(request, "Account Not Found..!!")
             return redirect('/account/register_page')
-        if not Hotel_Owner[0].is_verified:
-            messages.error(request,"Account Not verified..!!")
+        owner = owner_qs.first()
+        if not owner.is_verified:
+            messages.error(request, "Account Not verified..!!")
             return redirect('/account/login_page')
 
-        Hotel_Owner = authenticate(username = Hotel_Owner[0].username,password=password)
-        
-        if Hotel_Owner:
-            messages.success(request,"Welcome to noma hotel..!")
-            login(request, Hotel_Owner)
+        user = authenticate(username=owner.user.username, password=password)
+        if user:
+            messages.success(request, "Welcome to noma hotel..!")
+            login(request, user)
             return redirect('/')
-        messages.error(request,'Invaild credentials')
+        messages.error(request, 'Invalid credentials')
         return redirect('/account/login_page')
-    return render(request,'login_page.html')
+    return render(request, 'login_page.html')
 
 
 def register_page(request):
-    if request.method=="POST":
+    if request.method == "POST":
         firstname = request.POST.get('firstname')
         lastname = request.POST.get('lastname')
         phone_number = request.POST.get('phone_number')
@@ -50,63 +50,70 @@ def register_page(request):
             messages.warning(request, "Your password is too short use 8 digit password..")
             return redirect('/account/register_page')
 
-        Hotel_Owner = hotel_owner.objects.filter(
-            Q(phone_number =  phone_number ) | Q(email =  email )
-        )
-
-        if Hotel_Owner.exists():
-            messages.error(request,"Account already exists..!!")
+        if (
+            User.objects.filter(Q(email=email) | Q(username=email)).exists()
+            or hotel_owner.objects.filter(phone_number=phone_number).exists()
+        ):
+            messages.error(request, "Account already exists..!!")
             return redirect('/account/register_page')
 
-        Hotel_Owner = hotel_owner.objects.create(
-            username = email,
-            firstname = firstname,
-            lastname = lastname,
-            phone_number = phone_number,
-            email = email,
-            password  = password,
-            email_token= random_token()
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=firstname,
+            last_name=lastname,
+            password=password,
         )
-        Hotel_Owner.set_password(password)
-        Hotel_Owner.save()
-        sendEmail(email,Hotel_Owner.email_token)
-        messages.success(request,"An email is  sent to your email..!")
+        owner_profile = hotel_owner.objects.create(
+            user=user,
+            phone_number=phone_number,
+            email_token=random_token(),
+        )
+        sendEmail(email, owner_profile.email_token)
+        messages.success(request, "An email is sent to your email..!")
         return redirect('/account/register_page')
-    return render(request,'register_page.html')
+    return render(request, 'register_page.html')
 
 
 def verify_email_token(request,token):
     try:
-        Hotel_Owner = hotel_owner.objects.get(email_token = token)
-        Hotel_Owner.is_verified = True
-        Hotel_Owner.save()
-        messages.success(request,"E-mail Verified!")
+        owner = hotel_owner.objects.get(email_token=token)
+        owner.is_verified = True
+        owner.save()
+        messages.success(request, "E-mail verified! You can log in now.")
         return redirect('/account/login_page')
-    except Exception as e:
-        return HttpResponse("Invaild Token....!")
+    except hotel_owner.DoesNotExist:
+        try:
+            vendor = hotel_vendor.objects.get(email_token=token)
+            vendor.is_verified = True
+            vendor.save()
+            messages.success(request, "Vendor email verified! Please log in.")
+            return redirect('/account/vendor_login')
+        except hotel_vendor.DoesNotExist:
+            return HttpResponse("Invalid token....!")
 
 
 def send_otp(request,email):
-    Hotel_Owner = hotel_owner.objects.filter(email =  email)
+    owner_qs = hotel_owner.objects.select_related('user').filter(user__email=email)
 
-    if not Hotel_Owner.exists():
-        messages.error(request,"Account Not Found..!!")
+    if not owner_qs.exists():
+        messages.error(request, "Account Not Found..!!")
         return redirect('/account/register_page')
 
     otp = random.randint(1000,9999)
-    Hotel_Owner.update(otp = otp)
-    sendOtp(email,otp)
-    messages.success(request,"An Otp is send to your mail")
+    owner_qs.update(otp=otp)
+    sendOtp(email, otp)
+    messages.success(request, "An Otp is send to your mail")
     return redirect(f'/account/{email}/verify_otp')
 
 def verify_otp(request,email):
     if request.method == "POST":
         otp = request.POST.get('otp')
-        Hotel_Owner = hotel_owner.objects.get(email = email)
+        owner = hotel_owner.objects.select_related('user').get(user__email=email)
 
-        if otp == Hotel_Owner.otp:
-            messages.success(request,"Login sucessful")
-            login(request, Hotel_Owner)
+        if otp == owner.otp:
+            messages.success(request, "Login successful")
+            login(request, owner.user)
             return redirect('/')
         messages.warning(request, "Wrong otp")
         return redirect(f'/account/{email}/verify_otp')
@@ -120,32 +127,33 @@ def vendor_logout(request):
     return redirect('/account/vendor_login')
 
 def vendor_login(request):
-    if request.method=="POST":
+    if request.method == "POST":
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
-        Hotel_Vendor = hotel_vendor.objects.filter(email =  email)
 
-        if not Hotel_Vendor.exists():
-            messages.error(request,"Account Not Found..!!")
+        vendor_qs = hotel_vendor.objects.select_related('user').filter(user__email=email)
+
+        if not vendor_qs.exists():
+            messages.error(request, "Account Not Found..!!")
             return redirect('/account/vendor_register')
-        if not Hotel_Vendor[0].is_verified:
-            messages.error(request,"Account Not verified..!!")
+        vendor = vendor_qs.first()
+        if not vendor.is_verified:
+            messages.error(request, "Account Not verified..!!")
             return redirect('/account/vendor_login')
 
-        Hotel_Vendor = authenticate(username = Hotel_Vendor[0].username,password=password)
-        
-        if Hotel_Vendor:
-            messages.success(request,"Welcome to Noma hotel..!")
-            login(request, Hotel_Vendor)
+        user = authenticate(username=vendor.user.username, password=password)
+
+        if user:
+            messages.success(request, "Welcome to Noma hotel..!")
+            login(request, user)
             return redirect('ven_dashboard')
-        messages.error(request,'Invaild credentials')
+        messages.error(request, 'Invalid credentials')
         return redirect('/account/vendor_login')
-    return render(request,'vendor/vendor_login.html')
+    return render(request, 'vendor/vendor_login.html')
 
 
 def vendor_register(request):
-    if request.method=="POST":
+    if request.method == "POST":
         firstname = request.POST.get('firstname')
         lastname = request.POST.get('lastname')
         business_name = request.POST.get('business_name')
@@ -157,35 +165,43 @@ def vendor_register(request):
             messages.warning(request, "Your password is too short use 8 digit password..")
             return redirect('/account/vendor_register')
 
-        Hotel_Vendor = hotel_vendor.objects.filter(
-            Q(phone_number =  phone_number ) | Q(email =  email )
-        )
-
-        if Hotel_Vendor.exists():
-            messages.error(request,"Account already exists please login..!!")
+        if (
+            User.objects.filter(Q(email=email) | Q(username=email)).exists()
+            or hotel_vendor.objects.filter(phone_number=phone_number).exists()
+        ):
+            messages.error(request, "Account already exists please login..!!")
             return redirect('/account/vendor_login')
 
-        Hotel_Vendor = hotel_vendor.objects.create(
-            username = email,
-            firstname = firstname,
-            lastname = lastname,
-            business_name=business_name,
-            phone_number = phone_number,
-            email = email,
-            profile_pic = profile_image,
-            password  = password,
-            email_token= random_token()
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=firstname,
+            last_name=lastname,
+            password=password,
         )
-        Hotel_Vendor.set_password(password)
-        Hotel_Vendor.save()
-        sendEmail(email,Hotel_Vendor.email_token)
-        messages.success(request,"An email is  sent to your email..!")
+
+        vendor_profile = hotel_vendor.objects.create(
+            user=user,
+            business_name=business_name,
+            phone_number=phone_number,
+            profile_pic=profile_image,
+            email_token=random_token(),
+        )
+
+        sendEmail(email, vendor_profile.email_token)
+        messages.success(request, "An email is sent to your email..!")
         return redirect('/account/vendor_login')
-    return render(request,'vendor/vendor_register.html')
+    return render(request, 'vendor/vendor_register.html')
 
 @login_required(login_url='vendor_login')
 def ven_dashboard(request):
-    vendor_hotels = hotels.objects.filter(hotel_owner=request.user)
+    try:
+        vendor = hotel_vendor.objects.get(user=request.user)
+    except hotel_vendor.DoesNotExist:
+        messages.error(request, "You are not registered as a hotel vendor.")
+        return redirect('vendor_register')
+
+    vendor_hotels = hotels.objects.filter(hotel_owner=vendor)
     bookings = customers.objects.filter(hotel__in=vendor_hotels).select_related('hotel')
 
     context = {
@@ -197,40 +213,40 @@ def ven_dashboard(request):
 @login_required(login_url='vendor_login')
 def add_hotel(request):
     if request.method == "POST":
-        hotel_name  = request.POST.get('hotel_name')
+        hotel_name = request.POST.get('hotel_name')
         hotel_description = request.POST.get('hotel_description')
-        hotel_aminities = request.POST.getlist('hotel_aminities')
+        hotel_amenities_ids = request.POST.getlist('hotel_amenities')
         hotel_price = request.POST.get('hotel_price')
         hotel_offer_price = request.POST.get('hotel_offer_price')
         hotel_location = request.POST.get('hotel_location')
         hotel_slug = generateSlug(hotel_name)
 
         try:
-            Hotel_vendor = hotel_vendor.objects.get(id=request.user.id)
+            Hotel_vendor = hotel_vendor.objects.get(user=request.user)
         except hotel_vendor.DoesNotExist:
             return HttpResponse("You are not registered as a hotel vendor.")
 
 
-        hotel_obj  = hotels.objects.create(
-            hotel_name = hotel_name,
-            hotel_description = hotel_description,
-            hotel_price = hotel_price,
-            hotel_offer_price = hotel_offer_price,
-            hotel_location = hotel_location,
-            hotel_slug = hotel_slug,
-            hotel_owner = Hotel_vendor,
+        hotel_obj = hotels.objects.create(
+            hotel_name=hotel_name,
+            hotel_description=hotel_description,
+            hotel_price=hotel_price,
+            hotel_offer_price=hotel_offer_price,
+            hotel_location=hotel_location,
+            hotel_slug=hotel_slug,
+            hotel_owner=Hotel_vendor,
         )
 
-        for amenitie in hotel_aminities:
-            amenitie = amenities.objects.get(id = amenitie)
-            hotel_obj.hotel_aminities.add(amenitie)
-            hotel_obj.save()
+        for amenity_id in hotel_amenities_ids:
+            amenity = amenities.objects.get(id=amenity_id)
+            hotel_obj.hotel_amenities.add(amenity)
+        hotel_obj.save()
 
-        messages.success(request,"Hotel added succesfull..!!")
+        messages.success(request, "Hotel added successfully..!!")
         return redirect('/account/add_hotel')
 
     Amenities = amenities.objects.all()
-    return render(request, 'vendor/add_hotel.html', context = {'Amenities' : Amenities })
+    return render(request, 'vendor/add_hotel.html', context={'Amenities': Amenities})
 
 @login_required(login_url='vendor_login')
 def upload_images(request,slug):
@@ -255,13 +271,13 @@ def delete_images(request,id):
 
 @login_required(login_url='vendor_login')
 def edit_hotel(request,slug):
-    hotel_obj = hotels.objects.get(hotel_slug = slug)
-    if request.user.id != hotel_obj.hotel_owner.id:
+    hotel_obj = hotels.objects.get(hotel_slug=slug)
+    if request.user.id != hotel_obj.hotel_owner.user_id:
         return HttpResponse('You are unauthorized person')
     if request.method == "POST":
-        hotel_name  = request.POST.get('hotel_name')
+        hotel_name = request.POST.get('hotel_name')
         hotel_description = request.POST.get('hotel_description')
-        hotel_aminities = request.POST.getlist('hotel_aminities')
+        hotel_amenities_ids = request.POST.getlist('hotel_amenities')
         hotel_price = request.POST.get('hotel_price')
         hotel_offer_price = request.POST.get('hotel_offer_price')
         hotel_location = request.POST.get('hotel_location')
@@ -271,8 +287,10 @@ def edit_hotel(request,slug):
         hotel_obj.hotel_price = hotel_price
         hotel_obj.hotel_offer_price = hotel_offer_price
         hotel_obj.hotel_location = hotel_location
+        if hotel_amenities_ids:
+            hotel_obj.hotel_amenities.set(amenities.objects.filter(id__in=hotel_amenities_ids))
         hotel_obj.save()
-        messages.success(request,"Hotel Updated Succesfull")
+        messages.success(request, "Hotel Updated Successfully")
         return HttpResponseRedirect(request.path_info)
     Amenities = amenities.objects.all()
-    return render(request, 'vendor/edit_hotel.html',context={'hotel':hotel_obj, 'Amenities':Amenities})
+    return render(request, 'vendor/edit_hotel.html', context={'hotel': hotel_obj, 'Amenities': Amenities})

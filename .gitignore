@@ -1,1 +1,11 @@
+# Environment & secrets
 .env
+
+# Virtual environments
+hotel_env/
+venv/
+.venv/
+
+# Bytecode cache
+__pycache__/
+*.pyc

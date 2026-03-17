@@ -1,6 +1,9 @@
 {% load static %}
 <nav class="navbar">
-    <a href="{% url 'home' %}" class="logo"><img src="{% static "hotel_app/images/hotel_logo.png" %}" alt="logo"></a>
+    <a href="{% url 'home' %}" class="logo">
+      <span class="brand-mark">N</span>
+      <span class="brand-text">Noma</span>
+    </a>
     <span class="menu-toggle" onclick="toggleMenu()">☰</span>
     <ul id="nav-links">
       <li><a href="{% url 'home' %}">Home</a></li>

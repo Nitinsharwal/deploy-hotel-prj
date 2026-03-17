@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7rwndw#hwmeti5^2j-8rw!j0b5lke#pmws)a7e^399nrmglpfr'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -92,9 +92,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'railway',  
         'USER': 'root',     
-        'PASSWORD': 'kVnBPTqofnnWVbJthuWXQSUklXZgCVac', 
-        'HOST': 'tramway.proxy.rlwy.net',
-        'PORT': '56857',                 
+        'PASSWORD': 'RtldPjeaYGYGPEOadxoEifoTYpmcrSeH', 
+        'HOST': 'switchback.proxy.rlwy.net',
+        'PORT': '49077',                 
     }
 }
 
@@ -152,7 +152,11 @@ load_dotenv()
 host_user = os.getenv("EMAIL_USER")
 host_pass = os.getenv("EMAIL_PASSWORD")
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email configuration: prefer SMTP when credentials are present, fall back to console in dev
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend" if host_user and host_pass else "django.core.mail.backends.console.EmailBackend",
+)
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587

@@ -55,8 +55,14 @@
     <details>
       <summary>Select Activities ▾</summary>
       <div class="checkboxes" >
-        {% for aminitie in Amenities %}
-        <label><input type="checkbox" name="hotel_aminities" value="{{aminitie.id}}" {% if amenetie in hotel.amenities.all %} selected {{aminitie.amenities_name}} {% endif %}>{{aminitie.amenities_name}}</label>
+        {% for amenity in Amenities %}
+        <label>
+          <input type="checkbox"
+                 name="hotel_amenities"
+                 value="{{amenity.id}}"
+                 {% if amenity in hotel.hotel_amenities.all %}checked{% endif %}>
+          {{amenity.amenities_name}}
+        </label>
         {% endfor %}
       </div>
     </details>

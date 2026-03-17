@@ -34,4 +34,4 @@ def createHotel():
             is_active=fake.boolean()
         )
 
-        hotel.hotel_aminities.set(random.sample(amenities_list, k=random.randint(1, len(amenities_list))))
+        hotel.hotel_amenities.set(random.sample(amenities_list, k=random.randint(1, len(amenities_list))))
