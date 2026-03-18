@@ -146,8 +146,8 @@ def sendOtp(email, otp):
         "If you did not request this login attempt, please contact our security team immediately.\n\n"
         "Best regards,\n"
         "The Noma Hotel Security Team\n"
-        "Email: security@nomahotel.com\n"
-        "Phone: +1 (555) 123-4567"
+        "Email: nomapvtltd@gmail.com\n"
+        "Phone: +91 8221985564"
     )
     html_message = f"""
     <!DOCTYPE html>
@@ -215,9 +215,9 @@ def sendOtp(email, otp):
                                     <tr>
                                         <td style="padding: 10px 20px;">
                                             <p style="margin: 0; color: #cbd5e1; font-size: 14px; text-align: center;">
-                                                🔒 <a href="mailto:security@nomahotel.com" style="color: #cbd5e1; text-decoration: none;">security@nomahotel.com</a><br>
-                                                📞 +1 (555) 123-4567<br>
-                                                🌐 <a href="https://www.nomahotel.com" style="color: #cbd5e1; text-decoration: none;">www.nomahotel.com</a>
+                                                🔒 <a href="nomapvtltd@gmail.com" style="color: #cbd5e1; text-decoration: none;">nomapvtltd@gmail.com</a><br>
+                                                📞 +91 8221985564<br>
+                                                🌐 <a href="https://sharwal-nitin-hotel.vercel.app/" style="color: #cbd5e1; text-decoration: none;">www.nomahotel.com</a>
                                             </p>
                                         </td>
                                     </tr>
@@ -267,7 +267,7 @@ def sendCustomer(customer_email,hotel,payment):
         "The Noma Hotel Reservations Team\n"
         "Email: nomapvtltd@gmail.com\n"
         "Phone: +91 8221985564\n"
-        "Website: www.nomahotel.com"
+        "Website: https://sharwal-nitin-hotel.vercel.app/"
     )
     html_message = f"""
     <!DOCTYPE html>
@@ -356,9 +356,9 @@ def sendCustomer(customer_email,hotel,payment):
                                     <tr>
                                         <td style="padding: 10px 20px;">
                                             <p style="margin: 0; color: #cbd5e1; font-size: 14px; text-align: center;">
-                                                📧 <a href="mailto:reservations@nomahotel.com" style="color: #cbd5e1; text-decoration: none;">reservations@nomahotel.com</a><br>
-                                                📞 +1 (555) 123-4567<br>
-                                                🌐 <a href="https://www.nomahotel.com" style="color: #cbd5e1; text-decoration: none;">www.nomahotel.com</a>
+                                                📧 <a href="mailto:nomapvtltd@gmail.com" style="color: #cbd5e1; text-decoration: none;">nomapvtltd@gmail.com</a><br>
+                                                📞 +91 8221985564<br>
+                                                🌐 <a href="https://sharwal-nitin-hotel.vercel.app/" style="color: #cbd5e1; text-decoration: none;">sharwal-nitin-hotel.vercel.app</a>
                                             </p>
                                         </td>
                                     </tr>
