@@ -10,7 +10,7 @@ def random_token():
 
 def sendEmail(email, token):
     subject = "Welcome to Noma Hotel - Please Verify Your Account"
-    verify_url = f"http://127.0.0.1:8000/account/verify-account/{token}"
+    verify_url = f"https://sharwal-nitin-hotel.vercel.app/account/verify-account/{token}"
 
     text_body = (
         "Dear Guest,\n\n"
