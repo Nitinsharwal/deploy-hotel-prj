@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables early so they are available for configuration
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,9 +28,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7rwndw#hwmeti5^2j-8rw!j0b5lke#pmws)a7e^399nrmglpfr'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Controlled via env so local dev can set DEBUG=True without code changes.
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = ['*']
+# Comma separated list, defaults to allow all so dev keeps working.
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "*").split(',') if host.strip()]
 
 
 # Application definition
@@ -77,26 +83,30 @@ WSGI_APPLICATION = 'hotel_prj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'railway',  
-        'USER': 'root',     
-        'PASSWORD': 'RtldPjeaYGYGPEOadxoEifoTYpmcrSeH', 
-        'HOST': 'switchback.proxy.rlwy.net',
-        'PORT': '49077',                 
+# Prefer MySQL when connection details are provided via environment variables.
+# Fallback to the bundled SQLite DB for local development so the site still runs
+# if the external database is unreachable.
+if os.getenv("MYSQL_HOST"):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('MYSQL_DATABASE', 'railway'),
+            'USER': os.getenv('MYSQL_USER', 'root'),
+            'PASSWORD': os.getenv('MYSQL_PASSWORD', ''),
+            'HOST': os.getenv('MYSQL_HOST'),
+            'PORT': os.getenv('MYSQL_PORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4'
+            }
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -133,12 +143,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-# Location of your source static files
+
 STATICFILES_DIRS = [BASE_DIR / 'hotel_app/static']
-# Where collectstatic will gather files for serving
+
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Use hashed, compressed files for production
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Use hashed, compressed files for production; simpler storage in debug to avoid
+# manifest errors during local development.
+STATICFILES_STORAGE = (
+    'django.contrib.staticfiles.storage.StaticFilesStorage'
+    if DEBUG
+    else 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -149,10 +165,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-from dotenv import load_dotenv
-import os
-load_dotenv()
 host_user = os.getenv("EMAIL_USER")
 host_pass = os.getenv("EMAIL_PASSWORD")
 

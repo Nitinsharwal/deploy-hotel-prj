@@ -1,19 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
 {% block body %}
-<section class="hero">
-  <div>
-    <p class="eyebrow">Handpicked stays</p>
-    <h1>Stay better. Exclusive rates. Instant booking.</h1>
-    <p class="muted hero-sub">Browse curated hotels with transparent pricing, beautiful rooms, and amenities you’ll love.</p>
+<section class="hero hero-simple">
+  <div class="hero-copy">
+    <p class="eyebrow glow">Handpicked stays</p>
+    <h1>Find the right stay, fast.</h1>
+    <p class="muted hero-sub">Clean rooms, clear prices, and amenities that actually matter.</p>
     <div class="hero-actions">
       <a class="btn-primary" href="#explore">Explore stays</a>
-      <a class="btn-secondary" href="{% url 'register_page' %}">Join free</a>
+      <a class="btn-secondary" href="{% url 'register_page' %}">Create account</a>
     </div>
     <div class="hero-stats">
       <div class="pill"><strong>{{ Hotel.count }}</strong><span>Hotels listed</span></div>
-      <div class="pill"><strong>Instant</strong><span>Booking confirmation</span></div>
-      <div class="pill"><strong>Secure</strong><span>Payments & OTP</span></div>
+      <div class="pill"><strong>Instant</strong><span>Booking confirm</span></div>
     </div>
   </div>
   <div class="hero-card">
@@ -30,24 +29,29 @@
     <input type="text" name="search" id="searchInput" value="{{ request.GET.search }}" placeholder="Search by hotel or city...">
   </div>
   <div class="search-filters">
-    <label class="select-wrap">
-      <span>Sort</span>
-      <select id="sortBy" name="sort">
-        <option value="">Recommended</option>
-        <option value="low" {% if request.GET.sort == 'low' %}selected{% endif %}>Price: Low to High</option>
-        <option value="high" {% if request.GET.sort == 'high' %}selected{% endif %}>Price: High to Low</option>
+    <label class="sort-compact">
+      <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+      <select id="sortBy" name="sort" aria-label="Sort by price">
+        <option value="">Sort</option>
+        <option value="low" {% if request.GET.sort == 'low' %}selected{% endif %}>Low → High</option>
+        <option value="high" {% if request.GET.sort == 'high' %}selected{% endif %}>High → Low</option>
       </select>
     </label>
     <button type="submit" id="searchBtn" class="btn-primary">Search</button>
   </div>
 </form>
 
-<div class="filter-chips">
-  <span class="chip">Free Wi‑Fi</span>
-  <span class="chip">Gym</span>
-  <span class="chip">Pool</span>
-  <span class="chip">Breakfast</span>
-  <span class="chip">Parking</span>
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Featured</p>
+    <h2>Good stays, no clutter</h2>
+  </div>
+  <div class="filter-chips">
+    <span class="chip">Wi‑Fi</span>
+    <span class="chip">Breakfast</span>
+    <span class="chip">Pool</span>
+    <span class="chip">Parking</span>
+  </div>
 </div>
 
 <div class="restaurant-slider">
@@ -64,7 +68,7 @@
           <div class="hotel-name">{{ hotel.hotel_name }}</div>
           <div class="hotel-location">📍 {{ hotel.hotel_location|truncatechars:38 }}</div>
         </div>
-        <div class="media-badge">Offer ₹ {{ hotel.hotel_offer_price }}</div>
+        <div class="media-badge">₹ {{ hotel.hotel_offer_price }} / night</div>
       </div>
       <div class="hotel-body">
         <div class="price-row">
