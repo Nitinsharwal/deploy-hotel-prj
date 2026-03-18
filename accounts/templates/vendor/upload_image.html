@@ -77,7 +77,7 @@
 {% block body %}
 <div>
 {% for image in images %}
-<img src="/media/{{image.image}}" alt="hotelimage" style="width: 200px; border-radius: 10px; margin: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.688);">
+<img src="{{ image.image.url }}" alt="hotelimage" style="width: 200px; border-radius: 10px; margin: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.688);">
 <a href="{% url "delete_images" image.id %}" style="text-decoration: none;" ><button>Delete</button></a>
 {% endfor %}
 </div>

@@ -7,7 +7,7 @@
   --primary-dark: #0b5c5c;
   --accent: #f97316;
   --text: #0f172a;
-  --muted: #475569;
+  --muted: #ffffff;
   --shadow-soft: 0 12px 38px rgba(15, 118, 110, 0.12);
   --shadow-hard: 0 18px 60px rgba(15, 23, 42, 0.18);
   --radius: 14px;
@@ -895,7 +895,7 @@ tr:nth-child(even) {
 }
 
 .muted {
-  color: #3e4246;
+  color: #ffffff;
   margin: 0;
   line-height: 1.5;
 }
