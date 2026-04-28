@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from urllib.parse import parse_qs, unquote, urlparse
 
 # Load environment variables early so they are available for configuration
 load_dotenv()
@@ -83,30 +84,75 @@ WSGI_APPLICATION = 'hotel_prj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Prefer MySQL when connection details are provided via environment variables.
-# Fallback to the bundled SQLite DB for local development so the site still runs
-# if the external database is unreachable.
-if os.getenv("MYSQL_HOST"):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('MYSQL_DATABASE', 'railway'),
-            'USER': os.getenv('MYSQL_USER', 'root'),
-            'PASSWORD': os.getenv('MYSQL_PASSWORD', ''),
-            'HOST': os.getenv('MYSQL_HOST'),
-            'PORT': os.getenv('MYSQL_PORT', '3306'),
-            'OPTIONS': {
-                'charset': 'utf8mb4'
-            }
-        }
+
+def _getenv(*names, default=None):
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return default
+
+
+def _postgres_config_from_url(database_url):
+    parsed = urlparse(database_url)
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        return None
+
+    name = parsed.path.lstrip("/")
+    if not name:
+        return None
+
+    config = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': name,
+        'USER': unquote(parsed.username or ''),
+        'PASSWORD': unquote(parsed.password or ''),
+        'HOST': parsed.hostname or '',
+        'PORT': str(parsed.port or '5432'),
     }
-else:
-    DATABASES = {
+
+    options = {key: values[-1] for key, values in parse_qs(parsed.query).items() if values}
+    if options:
+        config['OPTIONS'] = options
+
+    return config
+
+
+def _database_config_from_env():
+    database_url = _getenv("DATABASE_URL", "POSTGRES_URL", "POSTGRESQL_URL")
+    if database_url:
+        config = _postgres_config_from_url(database_url)
+        if config:
+            return {'default': config}
+
+    # Legacy MYSQL_* names are still accepted during the transition so existing
+    # deployments keep working until the environment variables are renamed.
+    host = _getenv("POSTGRES_HOST", "PGHOST", "MYSQL_HOST")
+    if host:
+        config = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _getenv("POSTGRES_DB", "POSTGRES_DATABASE", "PGDATABASE", "MYSQL_DATABASE", default='postgres'),
+            'USER': _getenv("POSTGRES_USER", "PGUSER", "MYSQL_USER", default='postgres'),
+            'PASSWORD': _getenv("POSTGRES_PASSWORD", "PGPASSWORD", "MYSQL_PASSWORD", default=''),
+            'HOST': host,
+            'PORT': _getenv("POSTGRES_PORT", "PGPORT", "MYSQL_PORT", default='5432'),
+        }
+
+        sslmode = _getenv("POSTGRES_SSLMODE", "PGSSLMODE")
+        if sslmode:
+            config['OPTIONS'] = {'sslmode': sslmode}
+
+        return {'default': config}
+
+    return {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+
+DATABASES = _database_config_from_env()
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
