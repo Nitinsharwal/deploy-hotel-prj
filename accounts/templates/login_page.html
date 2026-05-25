@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Welcome back</p>
+      <h2>Sign in to continue</h2>
+      <p class="muted">Secure login to manage your bookings and dashboard.</p>
+      <div class="hint-box">
+        <span class="dot"></span>
+        <div>
+          <strong>Tip:</strong> You can also use an OTP if you prefer not to enter your password.
+        </div>
+      </div>
+    </div>
+    <form class="auth-form" method="POST">
+      {% include "_google_button.html" %}
+      {% csrf_token %}
+      <label class="form-field">
+        <span>Email</span>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </label>
+      <label class="form-field">
+        <span>Password</span>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          <i class="fa-solid fa-eye toggle-password" data-target="password" aria-label="Toggle password visibility"></i>
+        </div>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Login</button>
+        <button type="button" class="btn-secondary" onclick="send_otp()">Login with OTP</button>
+      </div>
+      <p class="switch-link" style="margin-top: 10px;">
+        <a href="{% url 'account_reset_password' %}">Forgot password?</a>
+      </p>
+      <p class="switch-link">New here?
+        <a href="{% url 'register_page' %}">Create an account</a>
+      </p>
+    </form>
+  </div>
+</section>
+
+<script>
+  function send_otp(){
+    const email = document.getElementById('email').value;
+    if(!email){
+      alert("Please enter your email first.");
+      return;
+    }
+    const encodedEmail = encodeURIComponent(email);
+    window.location.href = `/account/send_otp/${encodedEmail}/`;
+  }
+
+</script>
+{% endblock %}

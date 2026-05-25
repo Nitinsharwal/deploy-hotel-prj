@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Two-factor verification{% endblock %}
+
+{% block head %}
+<style>
+  .su-wrap {
+    max-width: 460px;
+    margin: 48px auto;
+    padding: 0 18px;
+  }
+  .su-card {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 22px 50px rgba(15, 23, 42, 0.14);
+    border: 1px solid var(--border, #e2e8f0);
+  }
+  .su-card .head {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #fff;
+    padding: 24px 28px;
+    text-align: center;
+  }
+  .su-card .shield {
+    width: 64px; height: 64px;
+    margin: 0 auto 10px;
+    background: rgba(244, 114, 182, 0.18);
+    color: #f9a8d4;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 26px;
+  }
+  .su-card h2 {
+    color: #fff; margin: 0; font-size: 22px; letter-spacing: -0.01em;
+  }
+  .su-card .head p {
+    margin: 6px 0 0; color: #cbd5e1; font-size: 14px;
+  }
+  .su-card .body { padding: 24px 28px 28px; }
+  .su-card .body p.lead { margin: 0 0 4px; font-size: 14px; color: #475569; }
+  .su-card .body .email { font-weight: 700; color: #0f172a; word-break: break-all; }
+
+  .otp-input {
+    width: 100%;
+    margin-top: 18px;
+    padding: 16px;
+    border: 2px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    background: #f8fafc;
+    text-align: center;
+    font-family: 'Courier New', ui-monospace, monospace;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.5em;
+    color: #0f172a;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .otp-input:focus {
+    outline: none;
+    border-color: var(--primary, #0f766e);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.15);
+  }
+
+  .su-btn {
+    width: 100%; min-height: 50px;
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--primary, #0f766e); color: #fff;
+    border: none; border-radius: 14px;
+    font-weight: 800; font-size: 15px; cursor: pointer;
+    box-shadow: 0 12px 28px rgba(15, 118, 110, 0.28);
+    transition: transform .12s ease, box-shadow .15s ease;
+  }
+  .su-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(15, 118, 110, 0.34); }
+
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 14px;
+    font-size: 12px; color: var(--muted, #64748b);
+  }
+  .meta-row a { color: var(--primary, #0f766e); text-decoration: underline; font-weight: 600; }
+  .meta-row .timer { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  .info-line {
+    background: #fef3c7; color: #92400e;
+    border-left: 4px solid #f59e0b;
+    padding: 10px 14px; border-radius: 0 10px 10px 0;
+    font-size: 12px; margin-top: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<section class="su-wrap">
+  <div class="su-card">
+    <div class="head">
+      <div class="shield"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div>
+      <h2>Two-factor verification</h2>
+      <p>Extra security for super-admin access</p>
+    </div>
+    <div class="body">
+      <p class="lead">We've sent a 6-digit security code to</p>
+      <div class="email">{{ email }}</div>
+
+      <form method="POST" autocomplete="off">
+        {% csrf_token %}
+        <input class="otp-input"
+               type="text"
+               name="otp"
+               inputmode="numeric"
+               pattern="[0-9]{6}"
+               maxlength="6"
+               autocomplete="one-time-code"
+               autofocus
+               required
+               placeholder="••••••"
+               aria-label="6-digit code">
+        <button type="submit" class="su-btn">
+          <i class="fa-solid fa-lock-open" aria-hidden="true" style="margin-right:8px;"></i>
+          Verify &amp; sign in
+        </button>
+      </form>
+
+      <div class="meta-row">
+        <span>Code expires in <span class="timer" id="timer">10:00</span></span>
+        <a href="{% url 'login_page' %}">Use a different account</a>
+      </div>
+
+      <div class="info-line">
+        <strong>Didn't get the code?</strong> Check your spam folder. If it doesn't arrive in a minute, go back and sign in again to send a fresh code.
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Pure-cosmetic countdown — the server is the real expiry authority.
+  (function () {
+    const el = document.getElementById('timer');
+    if (!el) return;
+    let secs = 10 * 60;
+    function tick() {
+      const m = String(Math.floor(secs / 60)).padStart(2, '0');
+      const s = String(secs % 60).padStart(2, '0');
+      el.textContent = m + ':' + s;
+      if (secs <= 0) { el.textContent = 'expired'; return; }
+      secs -= 1;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+
+  // Auto-submit when 6 digits are entered (with a small delay so the user
+  // sees the last digit they typed).
+  document.querySelector('.otp-input')?.addEventListener('input', function (e) {
+    const v = e.target.value.replace(/\D/g, '');
+    e.target.value = v;
+    if (v.length === 6) {
+      setTimeout(() => e.target.closest('form').submit(), 120);
+    }
+  });
+</script>
+{% endblock %}

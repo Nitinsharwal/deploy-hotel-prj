@@ -1,0 +1,65 @@
+{% extends "vendor/ven_base.html" %}
+{% block body %}
+<div class="vendor-hero">
+  <div>
+    <p class="eyebrow">{{ hotel.hotel_name }} — Rooms</p>
+    <h2>{% if mode == 'edit' %}Edit room{% else %}Add a new room{% endif %}</h2>
+    <p class="muted">Set capacity, inventory count, and base price.</p>
+  </div>
+  <a class="btn-pill" href="{% url 'manage_rooms' hotel.hotel_slug %}">← Back</a>
+</div>
+
+<section class="auth-shell" style="padding-top:0;">
+  <div class="auth-card" style="grid-template-columns: 1fr;">
+    <form class="auth-form" method="POST" style="padding: 22px;">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:12px;">
+          {% for e in form.non_field_errors %}<div>• {{ e }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <label class="form-field">
+        <span>Room name</span>
+        {{ form.name }}
+        {% if form.name.errors %}<small style="color:#b91c1c;">{{ form.name.errors|join:", " }}</small>{% endif %}
+      </label>
+
+      <div class="grid-2">
+        <label class="form-field">
+          <span>Type</span>
+          {{ form.room_type }}
+        </label>
+        <label class="form-field">
+          <span>Active</span>
+          {{ form.is_active }}
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label class="form-field">
+          <span>Capacity (guests per unit)</span>
+          {{ form.capacity }}
+          {% if form.capacity.errors %}<small style="color:#b91c1c;">{{ form.capacity.errors|join:", " }}</small>{% endif %}
+        </label>
+        <label class="form-field">
+          <span>Total units</span>
+          {{ form.total_count }}
+          {% if form.total_count.errors %}<small style="color:#b91c1c;">{{ form.total_count.errors|join:", " }}</small>{% endif %}
+        </label>
+      </div>
+
+      <label class="form-field">
+        <span>Base price (₹ per night)</span>
+        {{ form.base_price }}
+        {% if form.base_price.errors %}<small style="color:#b91c1c;">{{ form.base_price.errors|join:", " }}</small>{% endif %}
+      </label>
+
+      <button type="submit" class="btn-primary" style="margin-top: 8px;">
+        {% if mode == 'edit' %}Save changes{% else %}Add room{% endif %}
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review your stay{% endblock %}
+{% block body %}
+<section style="max-width: 720px; margin: 0 auto; padding: 24px 18px 40px;">
+  <h2 style="margin-bottom: 4px;">Review your stay</h2>
+  <p class="muted">{{ booking.room.hotel.hotel_name }} — {{ booking.room.name }} ({{ booking.reference }})</p>
+
+  {% if form.non_field_errors %}
+    <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:10px;margin:12px 0;">
+      {% for e in form.non_field_errors %}<div>• {{ e }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="POST" style="background:#fff; padding:20px; border-radius:14px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-top:18px;">
+    {% csrf_token %}
+    <label class="form-field">
+      <span>Rating</span>
+      {{ form.score }}
+    </label>
+    <label class="form-field" style="margin-top:12px;">
+      <span>Title (optional)</span>
+      {{ form.title }}
+    </label>
+    <label class="form-field" style="margin-top:12px;">
+      <span>Your review</span>
+      {{ form.body }}
+    </label>
+    <button type="submit" class="btn-primary" style="margin-top:14px;">Submit review</button>
+  </form>
+</section>
+{% endblock %}

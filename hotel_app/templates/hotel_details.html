@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ hotel.hotel_name }} · Noma{% endblock %}
+{% block meta_description %}{{ hotel.hotel_name }} — ₹{{ hotel.hotel_offer_price }} / night in {{ hotel.hotel_location }}. {{ hotel.hotel_description|striptags|truncatewords:25 }}{% endblock %}
+{% block og_title %}{{ hotel.hotel_name }} · Noma{% endblock %}
+{% block og_type %}place{% endblock %}
+{% block og_description %}{{ hotel.hotel_description|striptags|truncatewords:30 }}{% endblock %}
+{% block og_image %}{% if hotel.hotel_images.first and hotel.hotel_images.first.image %}{{ request.scheme }}://{{ request.get_host }}{{ hotel.hotel_images.first.image.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+{% block twitter_title %}{{ hotel.hotel_name }} · Noma{% endblock %}
+{% block twitter_description %}₹{{ hotel.hotel_offer_price }} / night · {{ hotel.hotel_location }}{% endblock %}
+{% block head %}
+<style>
+  .detail-wrap {
+    display: grid;
+    grid-template-columns: minmax(0,1.15fr) minmax(0,0.9fr);
+    gap: 22px;
+    padding: 20px 18px 40px;
+  }
+  .detail-hero {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(15,23,42,0.18);
+    min-height: 320px;
+    background: #0f172a;
+  }
+  .detail-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 90%);
+  }
+  .hero-meta {
+    position: absolute;
+    bottom: 16px;
+    left: 18px;
+    right: 18px;
+    color: #e2e8f0;
+  }
+  .hero-meta h2 {
+    margin: 0 0 4px;
+    font-size: 24px;
+  }
+  .hero-meta p {
+    margin: 0;
+    color: #cbd5e1;
+  }
+  .media-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(249,115,22,0.92);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(249,115,22,0.25);
+  }
+  .thumb-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .thumb-row img {
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.2s ease;
+  }
+  .thumb-row img.active {
+    border-color: #0f766e;
+    transform: translateY(-2px);
+  }
+  .hotel-info-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft, 0 12px 30px rgba(15,23,42,0.12));
+    display: grid;
+    gap: 10px;
+  }
+  .info-prices {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .info-prices .current {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary, #0f766e);
+  }
+  .info-prices .old {
+    text-decoration: line-through;
+    color: #cbd5e1;
+    font-weight: 600;
+  }
+  .booking-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-soft, 0 12px 30px rgba(15,23,42,0.12));
+  }
+  .booking_card_form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px 14px;
+  }
+  .booking_card_form label {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+  }
+  .booking_card_form input,
+  .booking_card_form select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f9fafb;
+    font: inherit;
+  }
+  .room-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 12px 0 18px;
+  }
+  .room-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #f8fafc;
+  }
+  .room-card .name { font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+  .room-card .meta { color: #475569; font-size: 13px; }
+  .room-card .price { color: #0f766e; font-weight: 700; margin-top: 6px; }
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .book_now {
+    padding: 13px 14px;
+    background: var(--primary, #0f766e);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  @media (max-width: 860px) {
+    .detail-wrap { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock head %}
+{% block body %}
+<section class="detail-wrap">
+  <div>
+    <div class="detail-hero">
+      {% if hotel.hotel_images.first and hotel.hotel_images.first.image %}
+        <img id="heroImage" src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
+      {% else %}
+        <img id="heroImage" src="{% static 'hotel_app/images/no_image.jpg' %}" alt="{{ hotel.hotel_name }}">
+      {% endif %}
+      <div class="hero-gradient"></div>
+      <div class="media-badge">₹ {{ hotel.hotel_offer_price }} / night</div>
+      <div class="hero-meta">
+        <h2>{{ hotel.hotel_name }}</h2>
+        <p>📍 {{ hotel.hotel_location }}</p>
+      </div>
+    </div>
+    <div class="thumb-row">
+      {% for img in hotel.hotel_images.all %}
+        <img src="{{ img.image.url }}" alt="Gallery image"
+             class="{% if forloop.first %}active{% endif %}"
+             onclick="swapHero(this)">
+      {% empty %}
+        <img src="{% static 'hotel_app/images/no_image.jpg' %}" alt="No image" class="active">
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="hotel-info-card">
+    <div class="info-prices">
+      <span class="current">₹ {{ hotel.hotel_offer_price }}</span>
+      <span class="old">₹ {{ hotel.hotel_price }}</span>
+    </div>
+    {% if hotel.rating_count %}
+      <div style="color:#f59e0b; font-weight:700;">
+        ★ {{ hotel.rating_avg }}
+        <small class="muted" style="font-weight:500;">({{ hotel.rating_count }} review{{ hotel.rating_count|pluralize }})</small>
+      </div>
+    {% else %}
+      <div class="muted" style="font-size: 13px;">No reviews yet</div>
+    {% endif %}
+    <div>
+      {% for amenity in hotel.hotel_amenities.all %}
+        <span class="amenity-badge">{{ amenity.amenities_name }}</span>
+      {% endfor %}
+    </div>
+    <p class="muted" style="margin:6px 0 0;">{{ hotel.hotel_description|safe }}</p>
+  </div>
+</section>
+
+{% if request.user.is_authenticated %}
+<section class="detail-wrap" style="grid-template-columns: 1fr;">
+  <div class="booking-card">
+    <h3 style="margin:0 0 12px;">Available rooms</h3>
+    {% if rooms %}
+      <div class="room-list">
+        {% for r in rooms %}
+          <div class="room-card">
+            <div class="name">{{ r.name }}</div>
+            <div class="meta">{{ r.get_room_type_display }} · Sleeps {{ r.capacity }} · {{ r.total_count }} available</div>
+            <div class="price">₹ {{ r.base_price }} / night</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No rooms have been published yet. Please check back soon.</p>
+    {% endif %}
+
+    <h3 style="margin:18px 0 12px;">Book this stay</h3>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        {% for err in form.non_field_errors %}<div>• {{ err }}</div>{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="POST" class="booking_card_form">
+      {% csrf_token %}
+      <div style="grid-column: 1 / -1;">
+        <label for="{{ form.room.id_for_label }}">Room</label>
+        {{ form.room }}
+        {% if form.room.errors %}<small style="color:#b91c1c;">{{ form.room.errors|join:", " }}</small>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.guest_first_name.id_for_label }}">First name</label>
+        {{ form.guest_first_name }}
+      </div>
+      <div>
+        <label for="{{ form.guest_last_name.id_for_label }}">Last name</label>
+        {{ form.guest_last_name }}
+      </div>
+      <div>
+        <label for="{{ form.guest_email.id_for_label }}">Email</label>
+        {{ form.guest_email }}
+      </div>
+      <div>
+        <label for="{{ form.guest_phone.id_for_label }}">Phone (optional)</label>
+        {{ form.guest_phone }}
+      </div>
+      <div>
+        <label for="{{ form.start_date.id_for_label }}">Check-in</label>
+        {{ form.start_date }}
+      </div>
+      <div>
+        <label for="{{ form.end_date.id_for_label }}">Check-out</label>
+        {{ form.end_date }}
+      </div>
+      <div>
+        <label for="{{ form.num_guests.id_for_label }}">Guests</label>
+        {{ form.num_guests }}
+      </div>
+      <div>
+        <label for="{{ form.payment_method.id_for_label }}">Payment method</label>
+        {{ form.payment_method }}
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <button type="submit" class="book_now">Book Now</button>
+        <small class="muted" style="display:block; margin-top:6px;">
+          You will be charged the room's base price × number of nights. Booking
+          is held as <strong>Pending</strong> until payment is confirmed.
+        </small>
+      </div>
+    </form>
+  </div>
+</section>
+{% else %}
+  <div style="text-align:center; margin: 10px 0 30px;">
+    <a href="{% url "login_page" %}" class="btn-pill">Login to book</a>
+  </div>
+{% endif %}
+
+<section class="detail-wrap" style="grid-template-columns: 1fr;">
+  <div class="booking-card">
+    <h3 style="margin:0 0 12px;">
+      Guest reviews
+      {% if hotel.rating_count %}
+        <small class="muted" style="font-weight:500;">— {{ hotel.rating_avg }}★ from {{ hotel.rating_count }} guest{{ hotel.rating_count|pluralize }}</small>
+      {% endif %}
+    </h3>
+    {% for r in reviews %}
+      <div style="border-bottom:1px solid #f1f5f9; padding: 10px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <strong>{% if r.title %}{{ r.title }}{% else %}{{ r.user.first_name|default:"Guest" }}{% endif %}</strong>
+          <span style="color:#f59e0b; font-weight:700;">{{ r.score }}★</span>
+        </div>
+        <p class="muted" style="margin: 6px 0 0;">{{ r.body|linebreaksbr }}</p>
+        <small class="muted">— {{ r.user.first_name|default:"Guest" }} · {{ r.created_at|date:"d M Y" }}</small>
+      </div>
+    {% empty %}
+      <p class="muted" style="margin:0;">No reviews yet. Be the first to share your experience after your stay.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<script>
+  function swapHero(el){
+    const hero = document.getElementById('heroImage');
+    if(!hero || !el) return;
+    hero.src = el.src;
+    document.querySelectorAll('.thumb-row img').forEach(img => img.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+{% endblock %}

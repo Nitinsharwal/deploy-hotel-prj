@@ -1,0 +1,53 @@
+{% extends "vendor/ven_base.html" %}
+{% block body %}
+<div class="vendor-hero">
+  <div>
+    <p class="eyebrow">Rooms — {{ hotel.hotel_name }}</p>
+    <h2>Manage room inventory</h2>
+    <p class="muted">Add room types, set capacity and counts so guests can book the right size.</p>
+  </div>
+  <a class="btn-primary" href="{% url 'add_room' hotel.hotel_slug %}">+ Add Room</a>
+</div>
+
+<section style="padding: 0 18px 32px;">
+  <table class="bookings">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Capacity</th>
+        <th>Units</th>
+        <th>Base price</th>
+        <th>Active</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rooms %}
+        <tr>
+          <td data-label="Name">{{ r.name }}</td>
+          <td data-label="Type">{{ r.get_room_type_display }}</td>
+          <td data-label="Capacity">{{ r.capacity }}</td>
+          <td data-label="Units">{{ r.total_count }}</td>
+          <td data-label="Base price">₹ {{ r.base_price }}</td>
+          <td data-label="Active">{% if r.is_active %}Yes{% else %}<span class="muted">No</span>{% endif %}</td>
+          <td data-label="Actions">
+            <a class="btn-pill" href="{% url 'edit_room' hotel.hotel_slug r.id %}">Edit</a>
+            <form method="POST" action="{% url 'delete_room' hotel.hotel_slug r.id %}" style="display:inline;"
+                  onsubmit="return confirm('Delete this room? Bookings using it will block deletion.');">
+              {% csrf_token %}
+              <button type="submit" class="btn-pill" style="background:#fee2e2; color:#991b1b;">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">No rooms yet. Click <strong>Add Room</strong> to create one.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top: 18px;">
+    <a class="btn-pill" href="{% url 'ven_dashboard' %}">← Back to dashboard</a>
+  </p>
+</section>
+{% endblock %}

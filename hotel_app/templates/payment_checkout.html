@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Pay for booking {{ booking.reference }}{% endblock %}
+{% block head %}
+<style>
+  .pay-wrap { max-width: 640px; margin: 28px auto 60px; padding: 0 18px; }
+  .pay-card {
+    background: #fff; border: 1px solid var(--border, #e2e8f0);
+    border-radius: 20px; padding: 28px;
+    box-shadow: 0 14px 36px rgba(15,23,42,.08);
+  }
+  .pay-card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.01em; }
+  .demo-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: #fef3c7; color: #92400e;
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+  .summary {
+    margin: 18px 0; padding: 18px;
+    background: #f8fafc; border-radius: 14px;
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 4px 0;
+  }
+  .summary-total {
+    margin-top: 8px; padding-top: 10px; border-top: 1px dashed #cbd5e1;
+    font-size: 20px;
+  }
+  .summary-total strong { color: var(--primary-dark, #0b5c5c); font-size: 24px; font-weight: 800; }
+
+  .methods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px; margin: 18px 0;
+  }
+  .method {
+    cursor: pointer;
+    border: 2px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    padding: 14px 12px;
+    text-align: center;
+    transition: border-color .15s ease, background .15s ease, transform .12s ease;
+    background: #fff;
+  }
+  .method input { position: absolute; opacity: 0; pointer-events: none; }
+  .method .icon { font-size: 22px; margin-bottom: 6px; color: var(--primary, #0f766e); }
+  .method .name { font-weight: 700; font-size: 14px; }
+  .method:hover { border-color: var(--primary, #0f766e); }
+  .method.selected {
+    border-color: var(--primary, #0f766e);
+    background: var(--primary-soft, #ccfbf1);
+    transform: translateY(-1px);
+  }
+  .pay-btn {
+    width: 100%; min-height: 52px;
+    padding: 14px; font-size: 16px; font-weight: 800;
+    background: var(--primary, #0f766e); color: #fff;
+    border: none; border-radius: 14px; cursor: pointer;
+    box-shadow: 0 12px 28px rgba(15,118,110,.28);
+    transition: transform .12s ease, box-shadow .15s ease;
+  }
+  .pay-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(15,118,110,.34); }
+  .pay-btn:disabled { opacity: 0.7; cursor: progress; }
+  .pay-btn .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    display: none;
+    animation: spin .8s linear infinite;
+  }
+  .pay-btn.is-loading .spinner { display: inline-block; }
+  .pay-btn.is-loading .label { opacity: 0.6; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+{% block body %}
+<section class="pay-wrap">
+  <div class="pay-card">
+    <span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo mode — no real charge</span>
+    <h2>Complete your booking</h2>
+    <p class="muted">
+      Reference <code>{{ booking.reference }}</code> · {{ booking.room.hotel.hotel_name }} — {{ booking.room.name }}
+    </p>
+
+    <div class="summary">
+      <div class="summary-row"><span class="muted">Dates</span><strong>{{ booking.start_date }} → {{ booking.end_date }}</strong></div>
+      <div class="summary-row"><span class="muted">Guests · Nights</span><strong>{{ booking.num_guests }} · {{ booking.nights }}</strong></div>
+      <div class="summary-row"><span class="muted">Rate</span><strong>₹ {{ booking.room.base_price }} / night</strong></div>
+      <div class="summary-row summary-total">
+        <span>Total</span>
+        <strong>₹ {{ booking.total_amount }}</strong>
+      </div>
+    </div>
+
+    <form method="POST" action="{% url 'dummy_pay' booking.reference %}" id="pay-form">
+      {% csrf_token %}
+      <p style="font-size:13px; font-weight:700; color:var(--muted); margin: 8px 0;">Choose a method (demo only)</p>
+      <div class="methods" role="radiogroup">
+        <label class="method selected">
+          <input type="radio" name="method" value="card" checked>
+          <div class="icon"><i class="fa-solid fa-credit-card" aria-hidden="true"></i></div>
+          <div class="name">Card</div>
+        </label>
+        <label class="method">
+          <input type="radio" name="method" value="upi">
+          <div class="icon"><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i></div>
+          <div class="name">UPI</div>
+        </label>
+        <label class="method">
+          <input type="radio" name="method" value="netbanking">
+          <div class="icon"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></div>
+          <div class="name">Net banking</div>
+        </label>
+        <label class="method">
+          <input type="radio" name="method" value="wallet">
+          <div class="icon"><i class="fa-solid fa-wallet" aria-hidden="true"></i></div>
+          <div class="name">Wallet</div>
+        </label>
+      </div>
+
+      <button type="submit" class="pay-btn" id="pay-btn">
+        <span class="label"><i class="fa-solid fa-shield-halved" aria-hidden="true" style="margin-right:8px;"></i>Pay ₹ {{ booking.total_amount }}</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+      <p class="muted" style="font-size:11px; text-align:center; margin-top:10px;">
+        This is a demo. No real payment processor is contacted. Your booking is confirmed instantly.
+      </p>
+    </form>
+
+    <p style="margin-top:14px; text-align:center;">
+      <a href="{% url 'profile' %}#bookings" class="btn-pill">← Back to my bookings</a>
+    </p>
+  </div>
+</section>
+
+<script>
+  // Method selection visual state
+  document.querySelectorAll('.method input').forEach(r => {
+    r.addEventListener('change', () => {
+      document.querySelectorAll('.method').forEach(m => m.classList.remove('selected'));
+      r.closest('.method').classList.add('selected');
+    });
+  });
+  // Loading state on submit — feels like a real gateway briefly
+  const form = document.getElementById('pay-form');
+  const btn = document.getElementById('pay-btn');
+  form.addEventListener('submit', () => {
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

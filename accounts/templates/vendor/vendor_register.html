@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Vendor Register{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Vendors</p>
+      <h2>Grow with Noma</h2>
+      <p class="muted">List your property, manage bookings, and reach more guests.</p>
+      <a class="link-ghost" href="{% url 'vendor_login' %}">Already registered? Login →</a>
+    </div>
+    <form class="auth-form" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="grid-2">
+        <label class="form-field">
+          <span>First name</span>
+          <input type="text" id="firstname" name="firstname" placeholder="AB">
+        </label>
+        <label class="form-field">
+          <span>Last name</span>
+          <input type="text" id="lastname" name="lastname" placeholder="Devilliers">
+        </label>
+      </div>
+      <label class="form-field">
+        <span>Business name</span>
+        <input type="text" id="business_name" name="business_name" placeholder="Benj Suites" required>
+      </label>
+      <label class="form-field">
+        <span>Phone number</span>
+        <input type="text" id="phone_number" name="phone_number" placeholder="+91 5551234567" required>
+      </label>
+      <label class="form-field">
+        <span>Email</span>
+        <input type="email" id="email" name="email" placeholder="your@business.com" required>
+      </label>
+      <label class="form-field">
+        <span>Profile image</span>
+        <input type="file" id="profile_image" name="profile_image" accept="image/*">
+      </label>
+      <label class="form-field">
+        <span>Password (min 8 chars)</span>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          <i class="fa-solid fa-eye toggle-password" data-target="password" aria-label="Toggle password visibility"></i>
+        </div>
+      </label>
+      <button type="submit" class="btn-primary">Create vendor account</button>
+      <p class="switch-link">Already have an account?
+        <a href="{% url 'vendor_login' %}">Login</a>
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

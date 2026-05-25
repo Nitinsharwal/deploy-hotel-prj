@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Vendor Login{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Vendors</p>
+      <h2>Access your dashboard</h2>
+      <p class="muted">Manage listings, bookings, and media from one place.</p>
+      <a class="link-ghost" href="{% url 'vendor_register' %}">Need an account? Register →</a>
+    </div>
+    <form class="auth-form" method="POST">
+      {% csrf_token %}
+      <label class="form-field">
+        <span>Email</span>
+        <input type="email" id="email" name="email" placeholder="you@business.com" required>
+      </label>
+      <label class="form-field">
+        <span>Password</span>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          <i class="fa-solid fa-eye toggle-password" data-target="password" aria-label="Toggle password visibility"></i>
+        </div>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Login</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

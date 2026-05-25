@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}Finish signing up{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Almost there</p>
+      <h2>One last step</h2>
+      <p class="muted">
+        We just need to confirm your email so we can link your Google account.
+        After this you'll never see this screen again.
+      </p>
+    </div>
+
+    <form class="auth-form" method="POST">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:12px;">
+          {% for e in form.non_field_errors %}<div>• {{ e }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <label class="form-field">
+          <span>{{ field.label }}</span>
+          {{ field }}
+          {% if field.errors %}
+            <small style="color:#b91c1c;">{{ field.errors|join:", " }}</small>
+          {% endif %}
+        </label>
+      {% endfor %}
+
+      <button type="submit" class="btn-primary">Create my account</button>
+
+      <p class="switch-link">
+        Wrong account?
+        <a href="{% url 'login_page' %}">Back to login</a>
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

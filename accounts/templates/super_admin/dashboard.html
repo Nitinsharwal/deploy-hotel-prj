@@ -1,0 +1,112 @@
+{% extends "super_admin/_base.html" %}
+{% block title %}Super Admin · Dashboard{% endblock %}
+{% block sa_body %}
+<div class="sa-wrap">
+
+  <h2 style="margin: 12px 0 18px;">
+    <i class="fa-solid fa-shield-halved" aria-hidden="true" style="color:#0f766e; margin-right:8px;"></i>
+    Vendor management
+  </h2>
+
+  <div class="sa-stats">
+    <div class="sa-stat">
+      <div class="label">Vendors</div>
+      <div class="value">{{ stats.vendors_total }}</div>
+      <small class="muted">{{ stats.vendors_verified }} verified</small>
+    </div>
+    <div class="sa-stat">
+      <div class="label">Hotels</div>
+      <div class="value">{{ stats.hotels_total }}</div>
+      <small class="muted">{{ stats.hotels_active }} active</small>
+    </div>
+    <div class="sa-stat primary">
+      <div class="label">Bookings</div>
+      <div class="value">{{ stats.bookings_total }}</div>
+    </div>
+    <div class="sa-stat success">
+      <div class="label">Guest revenue (paid)</div>
+      <div class="value">₹ {{ stats.revenue_paid|floatformat:0 }}</div>
+    </div>
+    <div class="sa-stat danger">
+      <div class="label">Charges outstanding</div>
+      <div class="value">₹ {{ stats.charges_pending|floatformat:0 }}</div>
+    </div>
+    <div class="sa-stat success">
+      <div class="label">Charges collected</div>
+      <div class="value">₹ {{ stats.charges_paid|floatformat:0 }}</div>
+    </div>
+  </div>
+
+  <div class="sa-card">
+    <h3>
+      Vendors
+      <small class="muted" style="font-weight:500; font-size:13px;">
+        Click a row to view, manage, or charge.
+      </small>
+    </h3>
+
+    <form class="sa-search" method="GET">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search by business, email, phone…">
+      <select name="status">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+        <option value="verified" {% if status_filter == 'verified' %}selected{% endif %}>Verified only</option>
+        <option value="unverified" {% if status_filter == 'unverified' %}selected{% endif %}>Unverified only</option>
+      </select>
+      <button type="submit" class="sa-btn primary">Search</button>
+      {% if q or status_filter != 'all' %}
+        <a href="{% url 'super_dashboard' %}" class="sa-btn subtle">Clear</a>
+      {% endif %}
+    </form>
+
+    <table class="sa">
+      <thead>
+        <tr>
+          <th>Business</th>
+          <th>Owner</th>
+          <th>Status</th>
+          <th>Hotels</th>
+          <th>Bookings</th>
+          <th>Outstanding</th>
+          <th>Paid</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendors %}
+          <tr>
+            <td data-label="Business"><strong>{{ v.business_name }}</strong></td>
+            <td data-label="Owner">
+              {{ v.user.first_name }} {{ v.user.last_name }}<br>
+              <small class="muted">{{ v.user.email }}</small>
+            </td>
+            <td data-label="Status">
+              {% if v.is_verified %}
+                <span class="sa-pill verified">✓ Verified</span>
+              {% else %}
+                <span class="sa-pill unverified">Unverified</span>
+              {% endif %}
+            </td>
+            <td data-label="Hotels">{{ v.n_hotels }}</td>
+            <td data-label="Bookings">{{ v.n_bookings }}</td>
+            <td data-label="Outstanding">
+              {% if v.outstanding %}<strong style="color:#b91c1c;">₹ {{ v.outstanding|floatformat:0 }}</strong>{% else %}—{% endif %}
+            </td>
+            <td data-label="Paid">
+              {% if v.paid_to_date %}₹ {{ v.paid_to_date|floatformat:0 }}{% else %}—{% endif %}
+            </td>
+            <td data-label="Actions">
+              <a class="sa-btn primary" href="{% url 'super_vendor_detail' v.id %}">
+                Open <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" style="text-align:center; padding:30px; color:#64748b;">
+            No vendors match the current filter.
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

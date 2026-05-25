@@ -1,0 +1,42 @@
+import random
+from random import choice
+
+from faker import Faker
+
+from accounts.models import *
+
+fake = Faker()
+
+
+def createUser():
+    for _ in range(19):
+        email = fake.email()
+        hotel_vendor.objects.create(
+            email=email,
+            business_name=fake.company(),
+            username=email,
+            first_name=fake.first_name(),
+            phone_number=random.randint(7000000000, 9999999999),
+        )
+
+
+def createHotel():
+    vendors = list(hotel_vendor.objects.all())
+    amenities_list = list(amenities.objects.all())
+
+    for _ in range(19):
+        Hotel_vendor = choice(vendors)
+        hotel = hotels.objects.create(
+            hotel_name=fake.company(),
+            hotel_description=fake.text(),
+            hotel_slug=fake.slug(),
+            hotel_owner=Hotel_vendor,
+            hotel_location=fake.address(),
+            hotel_price=round(random.uniform(1000, 5000), 2),
+            hotel_offer_price=round(random.uniform(500, 4000), 2),
+            is_active=fake.boolean(),
+        )
+
+        hotel.hotel_amenities.set(
+            random.sample(amenities_list, k=random.randint(1, len(amenities_list)))
+        )

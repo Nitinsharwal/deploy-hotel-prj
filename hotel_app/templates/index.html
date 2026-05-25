@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body %}
+<section class="hero hero-simple">
+  <div class="hero-copy">
+    <p class="eyebrow glow">Handpicked stays</p>
+    <h1>Find the right stay, fast.</h1>
+    <p class="muted hero-sub">Clean rooms, clear prices, and amenities that actually matter.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#explore">Explore stays</a>
+      <a class="btn-secondary" href="{% url 'register_page' %}">Create account</a>
+    </div>
+    <div class="hero-stats">
+      <div class="pill"><strong>{{ Hotel|length }}</strong><span>Hotels listed</span></div>
+      <div class="pill"><strong>Instant</strong><span>Booking confirm</span></div>
+    </div>
+  </div>
+  <div class="hero-card">
+    <div class="hero-illustration">
+      <div class="orb"></div>
+      <img src="{% static 'hotel_app/images/hotel4.jpeg' %}" alt="Hotel preview">
+    </div>
+  </div>
+</section>
+
+<form method="GET" class="search-shell" id="explore">
+  <div class="search-input">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="search" id="searchInput" value="{{ q.search }}" placeholder="Search by hotel or city...">
+  </div>
+  <div class="search-filters">
+    <label class="sort-compact">
+      <i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i>
+      <select id="sortBy" name="sort" aria-label="Sort">
+        <option value="">Best match</option>
+        <option value="low" {% if q.sort == 'low' %}selected{% endif %}>Price: Low → High</option>
+        <option value="high" {% if q.sort == 'high' %}selected{% endif %}>Price: High → Low</option>
+        <option value="rating" {% if q.sort == 'rating' %}selected{% endif %}>Top rated</option>
+      </select>
+    </label>
+    <button type="button" id="toggleFilters" class="btn-secondary" style="font-weight:700;">More filters ▾</button>
+    <button type="submit" id="searchBtn" class="btn-primary">Search</button>
+  </div>
+
+  <div id="advancedFilters" class="advanced-filters" hidden>
+    <div class="adv-row">
+      <label class="form-field">
+        <span>Location</span>
+        <input type="text" name="location" value="{{ q.location }}" placeholder="City or area">
+      </label>
+      <label class="form-field">
+        <span>Check-in</span>
+        <input type="date" name="start_date" value="{{ q.start_date }}">
+      </label>
+      <label class="form-field">
+        <span>Check-out</span>
+        <input type="date" name="end_date" value="{{ q.end_date }}">
+      </label>
+      <label class="form-field">
+        <span>Max price / night</span>
+        <input type="number" name="max_price" value="{{ q.max_price }}" placeholder="₹ e.g. 3000" min="0">
+      </label>
+      <label class="form-field">
+        <span>Min rating</span>
+        <select name="min_rating">
+          <option value="">Any</option>
+          {% for r in "12345" %}
+            <option value="{{ r }}" {% if q.min_rating == r %}selected{% endif %}>{{ r }}★ &amp; up</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    {% if all_amenities %}
+      <div class="adv-amenities">
+        <span class="muted" style="font-size:13px;">Amenities (must include all selected):</span>
+        <div class="amenity-checks">
+          {% for a in all_amenities %}
+            <label class="check-pill">
+              <input type="checkbox" name="amenity" value="{{ a.id }}"
+                     {% if a.id in q.amenity_ids %}checked{% endif %}>
+              {{ a.amenities_name }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <div style="margin-top: 10px;">
+      <a href="{% url 'home' %}" class="btn-pill" style="text-decoration:none;">Clear filters</a>
+    </div>
+  </div>
+</form>
+<style>
+  .advanced-filters {
+    padding: 14px 16px; background: #f8fafc;
+    border-radius: 14px; margin: 10px 18px 0;
+  }
+  .adv-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .adv-row .form-field { display: flex; flex-direction: column; gap: 4px; }
+  .adv-row .form-field span { font-size: 13px; color: #475569; font-weight: 600; }
+  .adv-row input, .adv-row select {
+    padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;
+    background: #fff; font: inherit;
+  }
+  .adv-amenities { margin-top: 12px; }
+  .amenity-checks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .check-pill {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 999px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .check-pill input { margin: 0; }
+  .hotel-rating { color: #f59e0b; font-weight: 700; font-size: 13px; }
+</style>
+<script>
+  (function(){
+    const btn = document.getElementById('toggleFilters');
+    const panel = document.getElementById('advancedFilters');
+    const hasAny = "{{ q.location|escapejs }}" || "{{ q.start_date|escapejs }}"
+                || "{{ q.end_date|escapejs }}" || "{{ q.max_price|escapejs }}"
+                || "{{ q.min_rating|escapejs }}" || {{ q.amenity_ids|length }} > 0;
+    if (hasAny) panel.hidden = false;
+    btn.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  })();
+</script>
+
+<div class="section-heading">
+  <div>
+    <p class="eyebrow">Featured</p>
+    <h2>Good stays, no clutter</h2>
+  </div>
+  <div class="filter-chips">
+    <span class="chip">Wi‑Fi</span>
+    <span class="chip">Breakfast</span>
+    <span class="chip">Pool</span>
+    <span class="chip">Parking</span>
+  </div>
+</div>
+
+<div class="restaurant-slider">
+  {% for hotel in Hotel %}
+  <a href="{% url "hotel_details" hotel.hotel_slug %}" class="card-link">
+    <div class="hotel-card">
+      <div class="hotel-media">
+        {% if hotel.hotel_images.first and hotel.hotel_images.first.image %}
+          <img src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
+        {% else %}
+          <img src="{% static "hotel_app/images/no_image.jpg" %}" alt="{{ hotel.hotel_name }}">
+        {% endif %}
+        <div class="media-overlay">
+          <div class="hotel-name">{{ hotel.hotel_name }}</div>
+          <div class="hotel-location">📍 {{ hotel.hotel_location|truncatechars:38 }}</div>
+        </div>
+        <div class="media-badge">₹ {{ hotel.hotel_offer_price }} / night</div>
+      </div>
+      <div class="hotel-body">
+        <div class="price-row">
+          <div>
+            <span class="price-current">₹ {{ hotel.hotel_offer_price }}</span>
+            <span class="price-old">₹ {{ hotel.hotel_price }}</span>
+          </div>
+          <span class="pill success">Instant confirm</span>
+        </div>
+        {% if hotel.rating_count %}
+          <div class="hotel-rating">★ {{ hotel.rating_avg }} <small class="muted" style="font-weight:500;">({{ hotel.rating_count }})</small></div>
+        {% endif %}
+        <p class="muted two-lines">{{ hotel.hotel_description|truncatechars:110 }}</p>
+        <div class="amenity-row">
+          {% for amenity in hotel.hotel_amenities.all|slice:":4" %}
+            <span class="amenity-badge">{{ amenity.amenities_name }}</span>
+          {% endfor %}
+        </div>
+        <div class="card-actions">
+          <span class="night-note">per night</span>
+          <span class="btn-pill">View details</span>
+        </div>
+      </div>
+    </div>
+  </a>
+  {% empty %}
+    <p style="padding: 12px 18px;">No hotels found. Try a different search.</p>
+  {% endfor %}
+</div>
+{% endblock %}

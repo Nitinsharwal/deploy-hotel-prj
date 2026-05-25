@@ -1,0 +1,16 @@
+asgiref==3.9.1
+Django==4.2.30
+django-axes==6.5.2
+django-dotenv==1.4.2
+Faker==37.4.2
+pillow==11.3.0
+psycopg[binary]==3.2.9
+python-dotenv==1.1.1
+sqlparse==0.5.3
+tzdata==2025.2
+whitenoise==6.9.0
+razorpay==2.0.1
+django-allauth[socialaccount]==65.4.1
+redis==5.2.1               # optional — only used when REDIS_URL env var is set
+pytest==8.3.3
+pytest-django==4.9.0

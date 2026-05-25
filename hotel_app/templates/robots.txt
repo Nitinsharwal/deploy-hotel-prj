@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /super-admin/
+Disallow: /account/
+Disallow: /accounts/
+
+Sitemap: {{ site_url }}/sitemap.xml

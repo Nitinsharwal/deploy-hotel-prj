@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Booking confirmed — {{ booking.reference }}{% endblock %}
+{% block head %}
+<style>
+  .success-wrap {
+    max-width: 640px; margin: 40px auto;
+    padding: 0 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .success-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 36px 28px 28px;
+    text-align: center;
+    box-shadow: 0 26px 60px rgba(15,23,42,.14);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* The animated checkmark — pure CSS, no JS lib */
+  .check-wrap {
+    width: 110px; height: 110px;
+    margin: 0 auto 14px;
+    position: relative;
+  }
+  .check-circle {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: #d1fae5;
+    display: grid; place-items: center;
+    animation: pop .55s cubic-bezier(.2,.9,.3,1.4) both;
+  }
+  .check-circle::before {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, .55);
+    animation: ring 1.4s ease-out 0.3s 1 both;
+  }
+  .check-svg {
+    width: 56px; height: 56px;
+  }
+  .check-svg .stroke {
+    stroke: #10b981;
+    stroke-width: 5;
+    fill: none;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: draw .5s ease-out .35s forwards;
+  }
+  @keyframes pop {
+    0%   { transform: scale(0.4); opacity: 0; }
+    70%  { transform: scale(1.07); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes ring {
+    0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, .55); }
+    100% { box-shadow: 0 0 0 40px rgba(16, 185, 129, 0); }
+  }
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .success-card h2 {
+    margin: 0 0 8px; font-size: 28px; letter-spacing: -0.01em;
+    animation: rise .5s ease-out .5s both;
+  }
+  .success-card p.lead {
+    color: var(--muted, #64748b); margin: 0 0 18px;
+    animation: rise .5s ease-out .6s both;
+  }
+  @keyframes rise {
+    from { transform: translateY(8px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  .success-summary {
+    background: #f8fafc; border-radius: 14px;
+    padding: 16px 18px; text-align: left;
+    margin: 14px 0 22px;
+    animation: rise .5s ease-out .75s both;
+  }
+  .success-summary .row {
+    display: flex; justify-content: space-between; padding: 4px 0;
+    font-size: 14px;
+  }
+  .success-summary .row .label { color: var(--muted, #64748b); }
+  .success-summary .row .value { font-weight: 700; }
+  .success-summary .total {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed #cbd5e1;
+    font-size: 18px;
+  }
+  .success-summary .total .value { color: var(--primary-dark, #0b5c5c); font-size: 22px; }
+
+  .success-actions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    animation: rise .5s ease-out .9s both;
+  }
+  .success-actions a {
+    padding: 13px 14px; border-radius: 12px;
+    text-decoration: none; font-weight: 700;
+    min-height: 48px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-download { background: var(--primary, #0f766e); color: #fff; }
+  .btn-download:hover { background: var(--primary-dark, #0b5c5c); }
+  .btn-back { background: #f1f5f9; color: #0f172a; }
+
+  .email-pill {
+    margin-top: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #ecfdf5; color: #065f46;
+    font-size: 13px; font-weight: 600;
+    animation: rise .5s ease-out 1.05s both;
+  }
+
+  /* Confetti pieces — 20 absolute-positioned divs, each animated */
+  .confetti {
+    position: absolute; top: -10px;
+    width: 8px; height: 14px;
+    opacity: 0;
+    border-radius: 2px;
+    animation: fall 3.5s ease-in forwards;
+  }
+  @keyframes fall {
+    0%   { transform: translate3d(0, -20px, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(var(--x), 100vh, 0) rotate(720deg); opacity: 0; }
+  }
+
+  @media (max-width: 480px) {
+    .success-actions { grid-template-columns: 1fr; }
+    .success-card { padding: 28px 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .check-circle, .check-svg .stroke,
+    .success-card h2, .success-card p.lead,
+    .success-summary, .success-actions, .email-pill,
+    .confetti { animation: none !important; opacity: 1 !important; }
+    .check-svg .stroke { stroke-dashoffset: 0 !important; }
+  }
+</style>
+{% endblock %}
+{% block body %}
+<section class="success-wrap">
+
+  {# Confetti canvas — 24 pieces with random positions/colors, all CSS-driven. #}
+  <div id="confetti-host" aria-hidden="true"></div>
+
+  <div class="success-card">
+    <div class="check-wrap">
+      <div class="check-circle">
+        <svg class="check-svg" viewBox="0 0 52 52" aria-hidden="true">
+          <path class="stroke" d="M14 27 l8 8 l16 -18"/>
+        </svg>
+      </div>
+    </div>
+
+    <h2>Booking confirmed 🎉</h2>
+    <p class="lead">
+      Your stay at <strong>{{ booking.room.hotel.hotel_name }}</strong> is locked in.
+      Reference <code>{{ booking.reference }}</code>.
+    </p>
+
+    <div class="success-summary">
+      <div class="row"><span class="label">Room</span><span class="value">{{ booking.room.name }}</span></div>
+      <div class="row"><span class="label">Check-in</span><span class="value">{{ booking.start_date|date:"D, d M Y" }}</span></div>
+      <div class="row"><span class="label">Check-out</span><span class="value">{{ booking.end_date|date:"D, d M Y" }}</span></div>
+      <div class="row"><span class="label">Nights · Guests</span><span class="value">{{ booking.nights }} · {{ booking.num_guests }}</span></div>
+      <div class="row total"><span class="label">Total paid</span><span class="value">₹ {{ booking.total_amount }}</span></div>
+    </div>
+
+    <div class="success-actions">
+      <a class="btn-download" href="{% url 'booking_slip' booking.reference %}" target="_blank" rel="noopener">
+        <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Download slip
+      </a>
+      <a class="btn-back" href="{% url 'profile' %}#bookings">
+        <i class="fa-solid fa-bookmark" aria-hidden="true"></i> My bookings
+      </a>
+    </div>
+
+    <span class="email-pill">
+      <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+      Slip sent to <strong>{{ booking.guest_email }}</strong>
+    </span>
+  </div>
+</section>
+
+<script>
+  // Spawn confetti pieces. Each gets a random color, horizontal drift, delay.
+  (function () {
+    const host = document.getElementById('confetti-host');
+    if (!host) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const colors = ['#0f766e', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#a855f7'];
+    const N = 30;
+    for (let i = 0; i < N; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = (Math.random() * 100) + '%';
+      piece.style.background = colors[i % colors.length];
+      piece.style.setProperty('--x', ((Math.random() * 200) - 100) + 'px');
+      piece.style.animationDelay = (Math.random() * 0.6) + 's';
+      piece.style.animationDuration = (2.8 + Math.random() * 1.6) + 's';
+      host.appendChild(piece);
+    }
+    // Clean up after the animation finishes so we don't leave DOM nodes around.
+    setTimeout(() => host.innerHTML = '', 5500);
+  })();
+</script>
+{% endblock %}

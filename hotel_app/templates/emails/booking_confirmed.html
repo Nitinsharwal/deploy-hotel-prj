@@ -1,0 +1,235 @@
+{% load static %}{% comment %}
+  Email template — bulletproof across Gmail / Apple Mail / Outlook 2007+.
+  Rules: use <table role="presentation"> for layout, all styles inline,
+  600px max width, no flexbox/grid/box-shadow, system fonts, VML for Outlook.
+{% endcomment %}<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+  <title>Booking confirmed — {{ booking.reference }}</title>
+  <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+  <style>
+    /* Limited mobile improvements — kept simple because some clients ignore <style>. */
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .px-30 { padding-left: 18px !important; padding-right: 18px !important; }
+      .stack { display: block !important; width: 100% !important; }
+      .h1 { font-size: 22px !important; line-height: 1.25 !important; }
+      .amount { font-size: 26px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a;">
+
+  {# Preheader — preview text shown by Gmail/Apple Mail next to the subject. #}
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent; mso-hide:all;">
+    Your booking at {{ booking.room.hotel.hotel_name }} is confirmed — {{ booking.start_date|date:"d M" }} to {{ booking.end_date|date:"d M Y" }}. Ref {{ booking.reference }}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 24px 12px;">
+
+        <!-- Card -->
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:600px; max-width:600px; background:#ffffff; border-radius:14px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0f766e; padding:28px 30px; color:#ffffff;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <div style="font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#a7f3d0; font-weight:700;">Noma Hotel</div>
+                    <div class="h1" style="font-family: 'Georgia','Times New Roman', serif; font-size:28px; line-height:1.2; font-weight:700; margin-top:4px;">Booking confirmed</div>
+                  </td>
+                  <td align="right" style="vertical-align:middle;">
+                    <span style="display:inline-block; background:#10b981; color:#ffffff; padding:6px 12px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:0.06em;">
+                      ✓ {{ booking.get_status_display|upper }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Reference strip -->
+          <tr>
+            <td style="background:#ecfdf5; padding:14px 30px;" class="px-30">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="font-size:13px; color:#065f46; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;">Booking reference</td>
+                  <td align="right" style="font-family: 'Courier New', monospace; font-size:15px; color:#065f46; font-weight:800; background:#d1fae5; padding:4px 10px; border-radius:6px;">{{ booking.reference }}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:28px 30px 8px;" class="px-30">
+              <p style="margin:0 0 10px; font-size:16px; line-height:1.5;">
+                Hi <strong>{{ booking.guest_first_name|default:"there" }}</strong>,
+              </p>
+              <p style="margin:0; font-size:15px; line-height:1.6; color:#334155;">
+                Your stay at <strong>{{ booking.room.hotel.hotel_name }}</strong> is locked in.
+                Show this email at check-in. We've also kept a copy in your account.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Quick facts: dates + nights -->
+          <tr>
+            <td style="padding:18px 30px;" class="px-30">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f8fafc; border-radius:12px;">
+                <tr>
+                  <td class="stack" width="50%" style="padding:18px 20px; vertical-align:top;">
+                    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">Check-in</div>
+                    <div style="font-size:16px; color:#0f172a; font-weight:700; margin-top:4px;">{{ booking.start_date|date:"D, d M Y" }}</div>
+                  </td>
+                  <td class="stack" width="50%" style="padding:18px 20px; vertical-align:top; border-left:1px solid #e2e8f0;">
+                    <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">Check-out</div>
+                    <div style="font-size:16px; color:#0f172a; font-weight:700; margin-top:4px;">{{ booking.end_date|date:"D, d M Y" }}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding:0 20px 16px;">
+                    <div style="font-size:13px; color:#64748b;">
+                      {{ booking.nights }} night{{ booking.nights|pluralize }} · {{ booking.num_guests }} guest{{ booking.num_guests|pluralize }}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Section: Stay details -->
+          <tr>
+            <td style="padding:10px 30px 0;" class="px-30">
+              <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.1em; font-weight:800; margin-bottom:10px;">Your stay</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;">
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Hotel</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.room.hotel.hotel_name }}</td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Room</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.room.name }} <span style="color:#94a3b8; font-weight:500;">({{ booking.room.get_room_type_display }})</span></td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Location</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.room.hotel.hotel_location }}</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Section: Guest -->
+          <tr>
+            <td style="padding:22px 30px 0;" class="px-30">
+              <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.1em; font-weight:800; margin-bottom:10px;">Guest</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;">
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Name</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.guest_first_name }} {{ booking.guest_last_name }}</td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Email</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.guest_email }}</td></tr>
+                {% if booking.guest_phone %}
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Phone</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ booking.guest_phone }}</td></tr>
+                {% endif %}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Section: Payment -->
+          {% with p=booking.payments.last %}
+          <tr>
+            <td style="padding:22px 30px 0;" class="px-30">
+              <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.1em; font-weight:800; margin-bottom:10px;">Payment</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;">
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Rate / night</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">₹ {{ booking.room.base_price }}</td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Subtotal ({{ booking.nights }} × ₹ {{ booking.room.base_price }})</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">₹ {{ booking.total_amount }}</td></tr>
+                {% if p %}
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Method</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ p.get_method_display }}</td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Transaction ID</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-family:'Courier New',monospace; font-size:12px; color:#475569;">{{ p.transaction_id|default:"—" }}</td></tr>
+                <tr><td style="padding:8px 0; border-bottom:1px solid #f1f5f9; color:#64748b;">Paid on</td><td align="right" style="padding:8px 0; border-bottom:1px solid #f1f5f9; font-weight:700;">{{ p.updated_at|date:"d M Y, H:i" }}</td></tr>
+                {% endif %}
+              </table>
+            </td>
+          </tr>
+          {% endwith %}
+
+          <!-- Total + PAID stamp -->
+          <tr>
+            <td style="padding:22px 30px 0;" class="px-30">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;">
+                <tr>
+                  <td style="padding:18px 20px; vertical-align:middle;">
+                    <div style="font-size:11px; color:#065f46; text-transform:uppercase; letter-spacing:0.08em; font-weight:800;">Total paid</div>
+                    <div style="margin-top:6px; display:inline-block; border:2px solid #10b981; color:#10b981; padding:3px 10px; border-radius:6px; font-weight:900; font-size:12px; letter-spacing:0.12em;">PAID</div>
+                  </td>
+                  <td align="right" style="padding:18px 20px; vertical-align:middle;">
+                    <span class="amount" style="font-size:30px; font-weight:800; color:#0f766e; letter-spacing:-0.01em;">₹ {{ booking.total_amount }}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA — bulletproof button (works in Outlook via VML) -->
+          <tr>
+            <td align="center" style="padding:28px 30px;" class="px-30">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+                href="{{ site_url }}{% url 'booking_slip' booking.reference %}"
+                style="height:48px;v-text-anchor:middle;width:280px;" arcsize="25%" stroke="f" fillcolor="#0f766e">
+                <w:anchorlock/>
+                <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">
+                  View / download slip
+                </center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-- -->
+              <a href="{{ site_url }}{% url 'booking_slip' booking.reference %}"
+                 style="display:inline-block; background:#0f766e; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:12px; font-weight:800; font-size:15px;">
+                View / download slip
+              </a>
+              <!--<![endif]-->
+              <div style="margin-top:14px; font-size:12px; color:#64748b;">
+                Or visit <a href="{{ site_url }}/account/profile/#bookings" style="color:#0f766e; text-decoration:underline;">My Bookings</a> any time.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Info strip -->
+          <tr>
+            <td style="padding:0 30px 26px;" class="px-30">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:0 8px 8px 0;">
+                <tr>
+                  <td style="padding:12px 14px; font-size:13px; color:#92400e;">
+                    <strong>Before you arrive:</strong> Bring a valid photo ID and this confirmation. Cancellations are subject to the hotel's policy — see your booking page for details.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0f172a; padding:24px 30px; color:#cbd5e1; font-size:13px; line-height:1.6; text-align:center;" class="px-30">
+              <div style="color:#ffffff; font-weight:700; margin-bottom:6px;">Noma Hotel</div>
+              <div>Thank you for choosing us. We look forward to welcoming you.</div>
+              <div style="margin-top:14px; font-size:12px;">
+                <a href="mailto:nomapvtltd@gmail.com" style="color:#5eead4; text-decoration:none;">nomapvtltd@gmail.com</a>
+                &nbsp;·&nbsp;
+                <a href="tel:+918221985564" style="color:#5eead4; text-decoration:none;">+91 8221985564</a>
+              </div>
+              <div style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); font-size:11px; color:#94a3b8;">
+                You received this because you made a booking on Noma.<br>
+                If this wasn't you, please contact us immediately.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

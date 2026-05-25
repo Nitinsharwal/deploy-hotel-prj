@@ -1,0 +1,46 @@
+{# Single booking row — reused inside profile.html tabs. Receives `b` as the Booking instance. #}
+<div class="booking-row">
+  <div>
+    <h4>
+      {{ b.room.hotel.hotel_name }}
+      <small class="muted" style="font-weight:500;">— {{ b.room.name }}</small>
+    </h4>
+    <div class="meta">
+      <code>{{ b.reference }}</code>
+      · {{ b.start_date }} → {{ b.end_date }}
+      · {{ b.nights }} night{{ b.nights|pluralize }}
+      · {{ b.num_guests }} guest{{ b.num_guests|pluralize }}
+    </div>
+    <div class="meta" style="margin-top: 3px;">
+      Booked {{ b.created_at|date:"d M Y" }}
+      {% if b.cancelled_at %} · Cancelled {{ b.cancelled_at|date:"d M Y" }}{% endif %}
+    </div>
+    <div class="total">₹ {{ b.total_amount }}</div>
+  </div>
+  <div class="action-col">
+    <span class="status-pill status-{{ b.status }}">{{ b.get_status_display }}</span>
+
+    {% if b.status == 'pending' %}
+      <a class="pay" href="{% url 'payment_checkout' b.reference %}">Pay now</a>
+    {% endif %}
+
+    {% if b.is_cancellable %}
+      <form method="POST" action="{% url 'cancel_booking' b.reference %}"
+            onsubmit="return confirm('Cancel this booking?');" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="cancel">Cancel</button>
+      </form>
+    {% endif %}
+
+    {% if b.status == 'completed' and not b.review %}
+      <a class="review" href="{% url 'submit_review' b.reference %}">Write review</a>
+    {% endif %}
+
+    {% if b.status == 'confirmed' or b.status == 'completed' %}
+      <a class="pay" href="{% url 'booking_slip' b.reference %}" target="_blank" rel="noopener"
+         style="background:#e0e7ff; color:#3730a3;">
+        <i class="fa-solid fa-file-arrow-down" aria-hidden="true" style="margin-right:4px;"></i>Slip
+      </a>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,111 @@
+{% load static %}{% comment %}
+  Email-safe template for charge reminders. Same rules as booking_confirmed.html:
+  table layout, inline styles, 600px width, system fonts, no flexbox/grid.
+{% endcomment %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment reminder — Noma</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .px-30 { padding-left: 18px !important; padding-right: 18px !important; }
+      .h1 { font-size: 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a;">
+
+  {# Preheader #}
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+    Payment reminder: ₹{{ charge.amount }} {{ charge.get_kind_display }} due {{ charge.due_date|date:"d M Y" }}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding: 24px 12px;">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:600px; max-width:600px; background:#ffffff; border-radius:14px; overflow:hidden;">
+
+          {# Header — color changes based on urgency #}
+          {% if charge.is_overdue %}
+            {% with bg="#7f1d1d" headline_label="ACTION REQUIRED" tag_bg="#fecaca" tag_color="#7f1d1d" %}
+            <tr><td style="background:{{ bg }}; padding:24px 30px; color:#fff;" class="px-30">
+              <div style="font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#fecaca; font-weight:700;">{{ headline_label }}</div>
+              <div class="h1" style="font-size:24px; line-height:1.2; font-weight:700; margin-top:4px;">Your hotels are hidden</div>
+            </td></tr>
+            {% endwith %}
+          {% else %}
+            <tr><td style="background:#b45309; padding:24px 30px; color:#fff;" class="px-30">
+              <div style="font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#fef3c7; font-weight:700;">PAYMENT REMINDER</div>
+              <div class="h1" style="font-size:24px; line-height:1.2; font-weight:700; margin-top:4px;">A charge is due soon</div>
+            </td></tr>
+          {% endif %}
+
+          <tr><td style="padding:24px 30px;" class="px-30">
+            <p style="margin:0 0 12px; font-size:15px;">
+              Hi <strong>{{ vendor.business_name }}</strong>,
+            </p>
+            {% if charge.is_overdue %}
+              <p style="margin:0 0 14px; font-size:14px; line-height:1.6; color:#7f1d1d;">
+                Your <strong>{{ charge.get_kind_display|lower }}</strong> of
+                <strong>₹ {{ charge.amount }}</strong> is past the grace period.
+                Your hotel listings have been temporarily removed from public search.
+                Pay the outstanding amount to restore them.
+              </p>
+            {% else %}
+              <p style="margin:0 0 14px; font-size:14px; line-height:1.6; color:#334155;">
+                This is a reminder that your <strong>{{ charge.get_kind_display|lower }}</strong>
+                of <strong>₹ {{ charge.amount }}</strong> is due
+                <strong>{{ charge.due_date|date:"d M Y" }}</strong>.
+                {% if charge.days_until_due == 0 %}It's due <strong>today</strong>.
+                {% elif charge.days_until_due > 0 %}You have <strong>{{ charge.days_until_due }} day{{ charge.days_until_due|pluralize }}</strong> left.
+                {% endif %}
+              </p>
+            {% endif %}
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#f8fafc; border-radius:12px; margin:16px 0;">
+              <tr><td style="padding:14px 18px; font-size:13px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr><td style="padding:5px 0; color:#64748b;">Type</td><td align="right" style="padding:5px 0; font-weight:700;">{{ charge.get_kind_display }}</td></tr>
+                  {% if charge.description %}
+                  <tr><td style="padding:5px 0; color:#64748b;">Description</td><td align="right" style="padding:5px 0; font-weight:700;">{{ charge.description }}</td></tr>
+                  {% endif %}
+                  <tr><td style="padding:5px 0; color:#64748b;">Due date</td><td align="right" style="padding:5px 0; font-weight:700;">{{ charge.due_date|date:"d M Y" }}</td></tr>
+                  <tr><td style="padding:5px 0; color:#64748b;">Grace ends</td><td align="right" style="padding:5px 0; font-weight:700;">{{ charge.effective_due_date|date:"d M Y" }}</td></tr>
+                  <tr><td style="padding:5px 0; color:#64748b;">Amount</td><td align="right" style="padding:5px 0; font-weight:800; color:#0f766e; font-size:18px;">₹ {{ charge.amount }}</td></tr>
+                </table>
+              </td></tr>
+            </table>
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td align="center" style="padding:14px 0;">
+                <a href="{{ site_url }}/account/ven_dashboard/"
+                   style="display:inline-block; background:#0f766e; color:#fff; text-decoration:none; padding:14px 28px; border-radius:12px; font-weight:800; font-size:15px;">
+                  Pay now from dashboard
+                </a>
+              </td></tr>
+            </table>
+
+            {% if not charge.is_overdue %}
+              <p style="margin:18px 0 0; font-size:12px; color:#64748b; line-height:1.6;">
+                After <strong>{{ charge.effective_due_date|date:"d M Y" }}</strong>
+                ({{ charge.grace_days }} days of grace past the due date), your hotels will
+                be temporarily hidden from public search until payment is received.
+              </p>
+            {% endif %}
+          </td></tr>
+
+          <tr><td style="background:#0f172a; padding:18px 30px; color:#cbd5e1; font-size:12px; text-align:center;" class="px-30">
+            <div style="color:#fff; font-weight:700; margin-bottom:4px;">Noma Hotel</div>
+            <div>Questions? <a href="mailto:nomapvtltd@gmail.com" style="color:#5eead4; text-decoration:none;">nomapvtltd@gmail.com</a></div>
+          </td></tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

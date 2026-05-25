@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}My Bookings{% endblock %}
+{% block head %}
+<style>
+  .bookings-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 18px 40px; }
+  .booking-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  }
+  .booking-row h4 { margin: 0 0 4px; }
+  .booking-meta { color: #64748b; font-size: 14px; }
+  .status-pill {
+    padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  }
+  .status-pending   { background: #fef3c7; color: #92400e; }
+  .status-confirmed { background: #d1fae5; color: #065f46; }
+  .status-cancelled { background: #fee2e2; color: #991b1b; }
+  .status-completed { background: #dbeafe; color: #1e40af; }
+  .action-col { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .total { font-weight: 800; color: #0f766e; font-size: 18px; }
+  .cancel-form button {
+    background: #fee2e2; color: #991b1b; border: none;
+    padding: 8px 14px; border-radius: 999px; font-weight: 700; cursor: pointer;
+  }
+</style>
+{% endblock %}
+{% block body %}
+<section class="bookings-wrap">
+  <h2 style="margin: 0 0 4px;">My bookings</h2>
+  <p class="muted" style="margin: 0 0 18px;">A history of every reservation tied to your account.</p>
+
+  {% for b in bookings %}
+    <div class="booking-row">
+      <div>
+        <h4>
+          {{ b.room.hotel.hotel_name }}
+          <small class="muted">— {{ b.room.name }}</small>
+        </h4>
+        <div class="booking-meta">
+          <code>{{ b.reference }}</code> · {{ b.start_date }} → {{ b.end_date }}
+          · {{ b.nights }} night{{ b.nights|pluralize }}
+          · {{ b.num_guests }} guest{{ b.num_guests|pluralize }}
+        </div>
+        <div class="booking-meta" style="margin-top: 4px;">
+          Booked {{ b.created_at|date:"d M Y" }}
+          {% if b.cancelled_at %} · Cancelled {{ b.cancelled_at|date:"d M Y" }}{% endif %}
+        </div>
+      </div>
+      <div class="action-col">
+        <span class="status-pill status-{{ b.status }}">{{ b.get_status_display }}</span>
+        <div class="total">₹ {{ b.total_amount }}</div>
+        {% if b.status == 'pending' %}
+          <a class="btn-pill" style="background:#0f766e; color:#fff;"
+             href="{% url 'payment_checkout' b.reference %}">Pay now</a>
+        {% endif %}
+        {% if b.is_cancellable %}
+          <form class="cancel-form" method="POST" action="{% url 'cancel_booking' b.reference %}"
+                onsubmit="return confirm('Cancel this booking?');">
+            {% csrf_token %}
+            <button type="submit">Cancel</button>
+          </form>
+        {% endif %}
+        {% if b.status == 'completed' and not b.review %}
+          <a class="btn-pill" href="{% url 'submit_review' b.reference %}">Write a review</a>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <p class="muted">You have not booked any stays yet. <a href="{% url 'home' %}">Browse hotels →</a></p>
+  {% endfor %}
+</section>
+{% endblock %}

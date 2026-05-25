@@ -1,0 +1,256 @@
+{% extends "vendor/ven_base.html" %}
+{% load static %}
+{% block head %}{% endblock head %}
+{% block body %}
+<div class="vendor-hero">
+  <div>
+    <p class="eyebrow">Vendor dashboard</p>
+    <h2>Manage your hotels</h2>
+    <p class="muted">Edit details, upload gallery images, and track bookings in one place.</p>
+  </div>
+  <a class="btn-primary" href="{% url 'add_hotel' %}">+ Add Hotel</a>
+</div>
+
+{# ===== Platform charges (subscription / publishing fee / etc.) ===== #}
+{% if pending_charges or past_charges %}
+<style>
+  .charges-wrap { padding: 0 18px; margin-top: 18px; }
+  .charges-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 18px;
+    padding: 20px 22px; box-shadow: 0 4px 14px rgba(15,23,42,.05);
+  }
+  .charges-card h3 {
+    margin: 0 0 12px; font-size: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .charges-banner {
+    padding: 12px 16px; border-radius: 12px;
+    margin-bottom: 14px; font-size: 14px; line-height: 1.5;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .charges-banner.warn  { background:#fef3c7; color:#92400e; border-left:4px solid #f59e0b; }
+  .charges-banner.block { background:#fee2e2; color:#991b1b; border-left:4px solid #ef4444; }
+  .charges-banner i { font-size: 18px; margin-top: 2px; }
+  .charges-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .charges-table th, .charges-table td {
+    padding: 10px 8px; border-bottom: 1px solid #f1f5f9; text-align: left;
+  }
+  .charges-table th {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #64748b; font-weight: 700;
+  }
+  .charges-table td.due-overdue { color: #b91c1c; font-weight: 700; }
+  .charges-table td.due-soon    { color: #b45309; font-weight: 700; }
+  .pay-btn {
+    background: #0f766e; color: #fff; border: none; padding: 8px 14px;
+    border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .pay-btn:hover { background: #0b5c5c; }
+  .status-chip {
+    display:inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .status-chip.pending  { background:#fef3c7; color:#92400e; }
+  .status-chip.paid     { background:#d1fae5; color:#065f46; }
+  .status-chip.waived   { background:#e0e7ff; color:#3730a3; }
+  .status-chip.overdue  { background:#fee2e2; color:#991b1b; }
+  .outstanding-pill {
+    background:#f1f5f9; padding: 4px 12px; border-radius:999px;
+    font-size: 13px; font-weight: 700; color: #0f172a; margin-left: auto;
+  }
+  @media (max-width: 640px) {
+    .charges-table thead { display: none; }
+    .charges-table tr { display: block; border:1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+    .charges-table td { display: flex; justify-content: space-between; padding: 4px 0; border: none; }
+    .charges-table td::before { content: attr(data-label); font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+  }
+</style>
+<section class="charges-wrap">
+  <div class="charges-card">
+    <h3>
+      <i class="fa-solid fa-receipt" style="color:#0f766e;"></i>
+      Platform charges
+      {% if outstanding_total %}
+        <span class="outstanding-pill">Outstanding: ₹ {{ outstanding_total }}</span>
+      {% endif %}
+    </h3>
+
+    {% if has_overdue %}
+      <div class="charges-banner block">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <div>
+          <strong>Your hotels are currently hidden from public search</strong> because
+          one or more charges are overdue (past the grace period). Pay the outstanding
+          amount to bring them back online.
+        </div>
+      </div>
+    {% elif pending_charges %}
+      {% for c in pending_charges %}{% if c.is_in_reminder_window %}
+        <div class="charges-banner warn">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>
+            <strong>₹ {{ c.amount }} ({{ c.get_kind_display }})</strong> is due
+            <strong>{{ c.due_date|date:"d M Y" }}</strong>.
+            You have until <strong>{{ c.effective_due_date|date:"d M Y" }}</strong>
+            (grace period) before your hotels are hidden from public search.
+          </div>
+        </div>
+      {% endif %}{% endfor %}
+    {% endif %}
+
+    {% if pending_charges %}
+      <table class="charges-table">
+        <thead>
+          <tr>
+            <th>Type</th><th>Description</th><th>Hotel</th>
+            <th>Due</th><th>Amount</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in pending_charges %}
+            <tr>
+              <td data-label="Type">{{ c.get_kind_display }}</td>
+              <td data-label="Description">{{ c.description|default:"—" }}</td>
+              <td data-label="Hotel">{% if c.hotel %}{{ c.hotel.hotel_name }}{% else %}<span class="muted">— account —</span>{% endif %}</td>
+              <td data-label="Due"
+                  class="{% if c.is_overdue %}due-overdue{% elif c.is_in_reminder_window %}due-soon{% endif %}">
+                {% if c.due_date %}
+                  {{ c.due_date|date:"d M Y" }}
+                  {% if c.is_overdue %}<br><small>overdue by {{ c.days_until_due|cut:"-" }}d</small>
+                  {% elif c.days_until_due == 0 %}<br><small>due today</small>
+                  {% elif c.is_in_reminder_window and c.days_until_due > 0 %}<br><small>in {{ c.days_until_due }}d</small>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </td>
+              <td data-label="Amount"><strong>₹ {{ c.amount }}</strong></td>
+              <td data-label="Status">
+                <span class="status-chip {% if c.is_overdue %}overdue{% else %}pending{% endif %}">
+                  {% if c.is_overdue %}OVERDUE{% else %}{{ c.get_status_display|upper }}{% endif %}
+                </span>
+              </td>
+              <td data-label="Action">
+                <form method="POST" action="{% url 'pay_charge' c.id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="pay-btn" type="submit">
+                    <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Pay
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    {% if past_charges %}
+      <details style="margin-top: 16px;">
+        <summary style="cursor:pointer; font-weight:700; color:#64748b; font-size:13px;">
+          Past charges ({{ past_charges|length }})
+        </summary>
+        <table class="charges-table" style="margin-top: 10px;">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for c in past_charges %}
+              <tr>
+                <td data-label="Date">{{ c.paid_at|date:"d M Y"|default:c.created_at|date:"d M Y" }}</td>
+                <td data-label="Type">{{ c.get_kind_display }}</td>
+                <td data-label="Description">{{ c.description|default:"—" }}</td>
+                <td data-label="Amount"><strong>₹ {{ c.amount }}</strong></td>
+                <td data-label="Status">
+                  <span class="status-chip {{ c.status }}">{{ c.get_status_display|upper }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<div class="restaurant-slider" style="padding-top:12px;">
+  {% for hotel in hotels %}
+    <div class="hotel-card">
+      <div class="hotel-media">
+        {% if hotel.hotel_images.first %}
+          <img src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
+        {% else %}
+          <img src="{% static 'hotel_app/images/no_image.jpg' %}" alt="{{ hotel.hotel_name }}">
+        {% endif %}
+        <div class="media-overlay">
+          <div class="hotel-name">{{ hotel.hotel_name }}</div>
+          <div class="hotel-location">₹ {{ hotel.hotel_offer_price }} / night</div>
+        </div>
+      </div>
+      <div class="hotel-body">
+        <div class="price-row">
+          <div>
+            <span class="price-current">₹ {{ hotel.hotel_offer_price }}</span>
+            <span class="price-old">₹ {{ hotel.hotel_price }}</span>
+          </div>
+          <a class="btn-secondary" href="{% url 'edit_hotel' hotel.hotel_slug %}">Edit</a>
+        </div>
+        <p class="muted two-lines">{{ hotel.hotel_description|truncatechars:110 }}</p>
+        <div class="amenity-row">
+          {% for amenity in hotel.hotel_amenities.all|slice:":4" %}
+            <span class="amenity-badge">{{ amenity.amenities_name }}</span>
+          {% endfor %}
+        </div>
+        <div class="card-actions">
+          <a class="btn-pill" href="{% url 'upload_images' hotel.hotel_slug %}">Manage images</a>
+          <a class="btn-pill" href="{% url 'manage_rooms' hotel.hotel_slug %}">Manage rooms ({{ hotel.rooms.count }})</a>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p style="padding: 12px 18px;">No hotels yet. Start by adding one.</p>
+  {% endfor %}
+</div>
+
+<div class="booking-table-wrap">
+  <h3>Bookings</h3>
+  <table class="bookings">
+    <thead>
+      <tr>
+        <th>Ref</th>
+        <th>Hotel · Room</th>
+        <th>Guest</th>
+        <th>Check-in</th>
+        <th>Check-out</th>
+        <th>Status</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for booking in bookings %}
+      <tr>
+        <td data-label="Ref"><code>{{ booking.reference }}</code></td>
+        <td data-label="Hotel · Room">{{ booking.room.hotel.hotel_name }} <small class="muted">— {{ booking.room.name }}</small></td>
+        <td data-label="Guest">
+          {{ booking.guest_first_name }} {{ booking.guest_last_name }}<br>
+          <small class="muted">{{ booking.guest_email }}</small>
+        </td>
+        <td data-label="Check-in">{{ booking.start_date }}</td>
+        <td data-label="Check-out">{{ booking.end_date }}</td>
+        <td data-label="Status">
+          <span class="status-pill status-{{ booking.status }}">{{ booking.get_status_display }}</span>
+        </td>
+        <td data-label="Total">₹ {{ booking.total_amount }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No bookings yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <style>
+    .status-pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .status-pending   { background: #fef3c7; color: #92400e; }
+    .status-confirmed { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+  </style>
+</div>
+{% endblock body %}

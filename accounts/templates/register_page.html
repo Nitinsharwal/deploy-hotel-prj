@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">Create your account</p>
+      <h2>Book smarter with Noma</h2>
+      <p class="muted">Save your details, track bookings, and get faster checkouts.</p>
+      <a class="link-ghost" href="{% url 'vendor_register' %}">Register as Vendor →</a>
+    </div>
+    <form class="auth-form" method="POST">
+      {% include "_google_button.html" %}
+      {% csrf_token %}
+      <div class="grid-2">
+        <label class="form-field">
+          <span>First name</span>
+          <input type="text" id="firstname" name="firstname" placeholder="AB">
+        </label>
+        <label class="form-field">
+          <span>Last name</span>
+          <input type="text" id="lastname" name="lastname" placeholder="Devilliers">
+        </label>
+      </div>
+      <label class="form-field">
+        <span>Phone number</span>
+        <input type="text" id="phone_number" name="phone_number" placeholder="+91 9876543210" required>
+      </label>
+      <label class="form-field">
+        <span>Email</span>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </label>
+      <label class="form-field">
+        <span>Password (min 8 chars)</span>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          <i class="fa-solid fa-eye toggle-password" data-target="password" aria-label="Toggle password visibility"></i>
+        </div>
+      </label>
+      <button type="submit" class="btn-primary">Create account</button>
+      <p class="switch-link">Already have an account?
+        <a href="{% url 'login_page' %}">Login</a>
+      </p>
+    </form>
+  </div>
+</section>
+
+{% endblock %}

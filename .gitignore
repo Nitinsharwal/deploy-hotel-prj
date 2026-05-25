@@ -1,0 +1,35 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+hotel_env/
+venv/
+.venv/
+
+# Bytecode cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local DB
+db.sqlite3
+*.sqlite3-journal
+
+# User-uploaded media (don't commit guest/vendor uploads)
+media/
+
+# Django collectstatic output — regenerated on every deploy
+staticfiles/
+
+# Test & coverage artefacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store

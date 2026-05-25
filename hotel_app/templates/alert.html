@@ -1,0 +1,29 @@
+{% if messages %}
+  <div class="toast-stack" role="status" aria-live="polite">
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}success{% endif %}"
+           data-auto-dismiss="5000">
+        <i class="fa-solid
+          {% if 'success' in message.tags %}fa-circle-check
+          {% elif 'error' in message.tags or 'danger' in message.tags %}fa-circle-exclamation
+          {% elif 'warning' in message.tags %}fa-triangle-exclamation
+          {% else %}fa-circle-info{% endif %}" aria-hidden="true"></i>
+        <span style="flex:1; line-height:1.4;">{{ message }}</span>
+        <button type="button" class="alert-close" aria-label="Dismiss"
+                onclick="this.parentElement.classList.add('fade-out'); setTimeout(()=>this.parentElement.remove(),250);">
+          &times;
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+  <script>
+    // Auto-dismiss each toast after its data-auto-dismiss ms.
+    document.querySelectorAll('.toast-stack .alert[data-auto-dismiss]').forEach(el => {
+      const t = parseInt(el.dataset.autoDismiss, 10) || 5000;
+      setTimeout(() => {
+        el.classList.add('fade-out');
+        setTimeout(() => el.remove(), 250);
+      }, t);
+    });
+  </script>
+{% endif %}

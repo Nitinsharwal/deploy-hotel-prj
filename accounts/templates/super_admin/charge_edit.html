@@ -1,0 +1,99 @@
+{% extends "super_admin/_base.html" %}
+
+{% block sa_body %}
+<div class="sa-wrap">
+  <a class="sa-back" href="{% url 'super_vendor_detail' vendor.id %}">← Back to {{ vendor.business_name }}</a>
+
+  <div class="sa-card">
+    <h2 style="margin:0 0 4px;">Edit charge</h2>
+    <p class="muted" style="margin:0 0 18px;">
+      Pending charge for <strong>{{ vendor.business_name }}</strong>
+      ({{ vendor.user.email }}). Created {{ charge.created_at|date:"d M Y" }}.
+    </p>
+
+    {# Status-at-a-glance row #}
+    {% if charge.is_overdue %}
+      <div style="background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:10px; margin-bottom:14px; font-size:14px;">
+        <strong>⚠ OVERDUE</strong> — past the grace period. Vendor's hotels are currently hidden.
+      </div>
+    {% elif charge.is_in_reminder_window %}
+      <div style="background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:10px; margin-bottom:14px; font-size:14px;">
+        <strong>⚡ In reminder window</strong> — vendor is receiving daily reminders.
+      </div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'super_edit_charge' charge.id %}">
+      {% csrf_token %}
+      <div class="sa-form-grid">
+        <label>
+          <span>Type</span>
+          <select name="kind">
+            {% for value, label in charge.Kind.choices %}
+              <option value="{{ value }}" {% if value == charge.kind %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>Amount (₹)</span>
+          <input type="number" name="amount" step="0.01" min="0.01" value="{{ charge.amount }}" required>
+        </label>
+        <label>
+          <span>Linked hotel (optional)</span>
+          <select name="hotel_id">
+            <option value="">— Account-wide —</option>
+            {% for h in vendor_hotels %}
+              <option value="{{ h.id }}" {% if charge.hotel_id == h.id %}selected{% endif %}>{{ h.hotel_name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>Due date</span>
+          <input type="date" name="due_date"
+                 value="{{ charge.due_date|date:'Y-m-d' }}"
+                 title="When the vendor must pay by. Reminders fire from 5 days before this date.">
+        </label>
+        <label>
+          <span>Grace days (after due)</span>
+          <input type="number" name="grace_days" value="{{ charge.grace_days }}" min="0" max="180" step="1"
+                 title="After this many days past the due date, the vendor's hotels disappear from public listings.">
+        </label>
+        <label style="grid-column: 1 / -1;">
+          <span>Description</span>
+          <input type="text" name="description" value="{{ charge.description }}" maxlength="200">
+        </label>
+        <label style="grid-column: 1 / -1;">
+          <span>Internal notes (only superusers see this)</span>
+          <textarea name="notes" rows="3">{{ charge.notes }}</textarea>
+        </label>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+        <button type="submit" class="sa-btn primary">
+          <i class="fa-solid fa-floppy-disk"></i> Save changes
+        </button>
+        <a href="{% url 'super_vendor_detail' vendor.id %}" class="sa-btn subtle">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  {# Quick danger zone — mark paid/waived/delete inline so admin doesn't have to bounce. #}
+  <div class="sa-card" style="margin-top: 16px;">
+    <h3 style="margin:0 0 12px;">Quick actions</h3>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <form method="POST" action="{% url 'super_update_charge' charge.id 'paid' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="sa-btn success"><i class="fa-solid fa-check"></i> Mark PAID</button>
+      </form>
+      <form method="POST" action="{% url 'super_update_charge' charge.id 'waived' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="sa-btn subtle">Mark WAIVED</button>
+      </form>
+      <form method="POST" action="{% url 'super_update_charge' charge.id 'delete' %}"
+            onsubmit="return confirm('Delete this charge? This cannot be undone.');" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="sa-btn danger"><i class="fa-solid fa-trash"></i> Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

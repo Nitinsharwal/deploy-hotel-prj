@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP{% endblock %}
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-side">
+      <p class="eyebrow">One-time password</p>
+      <h2>Check your inbox</h2>
+      <p class="muted">
+        We've sent a 6-digit code to your email. Enter it below to finish signing in.
+      </p>
+      <div class="hint-box">
+        <span class="dot"></span>
+        <div>
+          <strong>Didn't get it?</strong>
+          Wait a minute and check spam, or
+          <a href="{% url 'login_page' %}" style="text-decoration: underline;">go back and try again</a>.
+        </div>
+      </div>
+    </div>
+
+    <form class="auth-form" method="POST" autocomplete="one-time-code">
+      {% csrf_token %}
+      <label class="form-field">
+        <span>Enter OTP</span>
+        <div class="password-wrap">
+          <input type="text"
+                 id="otp" name="otp"
+                 inputmode="numeric"
+                 pattern="[0-9]*"
+                 autocomplete="one-time-code"
+                 maxlength="6"
+                 placeholder="••••••"
+                 required
+                 style="letter-spacing: 0.5em; text-align: center; font-size: 22px; font-weight: 700;">
+          <i class="fa-solid fa-eye toggle-password" data-target="otp"
+             role="button" tabindex="0"
+             aria-label="Toggle OTP visibility"></i>
+        </div>
+      </label>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Verify &amp; Login</button>
+      </div>
+
+      <p class="switch-link">
+        Remember your password?
+        <a href="{% url 'login_page' %}">Back to login</a>
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

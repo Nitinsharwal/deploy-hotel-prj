@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="{% block meta_description %}Noma — Find the right stay, fast. Clean rooms, clear prices, instant booking.{% endblock %}">
+  <meta name="robots" content="index, follow">
+
+  {# Open Graph / Twitter — overridden per-page for richer link previews. #}
+  <meta property="og:site_name" content="Noma">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}Noma — Find the right stay, fast{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Clean rooms, clear prices, instant booking.{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{% static 'hotel_app/images/hotel4.jpeg' %}{% endblock %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}Noma — Find the right stay, fast{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}Clean rooms, clear prices, instant booking.{% endblock %}">
+
+  {# Favicon + PWA install. Browsers fall back gracefully if files are missing. #}
+  <link rel="icon" href="{% static 'hotel_app/images/logohootel.png' %}" type="image/png">
+  <link rel="apple-touch-icon" href="{% static 'hotel_app/images/logohootel.png' %}">
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="{% static 'hotel_app/css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+  <title>{% block title %}Noma — Find the right stay, fast{% endblock %}</title>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% include "navbar.html" %}
+  {% include "alert.html" %}
+
+  <main>
+    {% block body %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section about">
+        <h2>About Us</h2>
+        <p>We create innovative web solutions to help businesses grow and thrive.</p>
+      </div>
+      <div class="footer-section links">
+        <h2>Quick Links</h2>
+        <ul>
+          <li><a href="{% url 'home' %}">Home</a></li>
+          <li><a href="{% url 'about' %}">About</a></li>
+          <li><a href="{% url 'vendor_register' %}">Vendor register</a></li>
+          <li><a href="{% url 'vendor_login' %}">Vendor login</a></li>
+          <li><a target="_blank" rel="noopener" href="https://chetan-sharwal-portfolio.netlify.app/">Portfolio</a></li>
+          <li><a href="{% url 'contact' %}">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-section contact">
+        <h2>Contact</h2>
+        <p>Email: nitinparjapat94@gmail.com</p>
+        <p>Phone: +91 8221985564</p>
+        <p>Location: Panipat, Haryana, India</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; <script>document.write(new Date().getFullYear())</script> Noma | All Rights Reserved
+    </div>
+  </footer>
+
+  <script src="{% static 'hotel_app/JS/script.js' %}"></script>
+  <script>
+    // Password visibility toggle (any icon with .toggle-password)
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.toggle-password').forEach(function(icon) {
+        const targetId = icon.dataset.target || 'password';
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        icon.addEventListener('click', function () {
+          const isPassword = input.getAttribute('type') === 'password';
+          input.setAttribute('type', isPassword ? 'text' : 'password');
+          icon.classList.toggle('fa-eye');
+          icon.classList.toggle('fa-eye-slash');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

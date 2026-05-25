@@ -1,0 +1,65 @@
+{% load static %}{% comment %}
+  Welcome email sent when a customer (hotel_owner profile) account is created.
+  Same email-safe conventions as booking_confirmed.html.
+{% endcomment %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Noma</title>
+</head>
+<body style="margin:0; padding:0; background:#f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a;">
+
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+    Welcome to Noma — your account is ready. Find your next stay in minutes.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background:#ffffff; border-radius:14px; overflow:hidden;">
+
+        <tr><td style="background:#0f766e; padding:32px 30px; color:#fff; text-align:center;">
+          <div style="font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#a7f3d0; font-weight:700;">Welcome to Noma</div>
+          <div style="font-family:Georgia,serif; font-size:30px; line-height:1.2; font-weight:700; margin-top:6px;">Your account is ready 🎉</div>
+        </td></tr>
+
+        <tr><td style="padding:28px 30px;">
+          <p style="margin:0 0 12px; font-size:15px;">Hi <strong>{{ first_name|default:"there" }}</strong>,</p>
+          <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#334155;">
+            Thanks for joining Noma — clean rooms, clear prices, and amenities that
+            actually matter. You can now book a stay anywhere across our network
+            with one tap.
+          </p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc; border-radius:12px; margin:14px 0;">
+            <tr><td style="padding:16px 18px;">
+              <strong style="display:block; margin-bottom:8px; color:#0f766e;">A few things to try</strong>
+              <ul style="margin:0; padding-left:18px; color:#334155; font-size:14px; line-height:1.7;">
+                <li>Browse handpicked stays on the home page</li>
+                <li>Filter by date, location, price, amenities</li>
+                <li>Save bookings to your profile · review after your stay</li>
+                <li>Get a slip in your inbox + a printable receipt page</li>
+              </ul>
+            </td></tr>
+          </table>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:14px 0;">
+            <a href="{{ site_url }}/" style="display:inline-block; background:#0f766e; color:#fff; text-decoration:none; padding:14px 28px; border-radius:12px; font-weight:800; font-size:15px;">Find your first stay</a>
+          </td></tr></table>
+
+          <p style="margin:18px 0 0; font-size:12px; color:#64748b; line-height:1.6;">
+            Logging in: use the email <strong>{{ email }}</strong> with the password you chose.
+            You can also sign in with Google.
+          </p>
+        </td></tr>
+
+        <tr><td style="background:#0f172a; padding:18px 30px; color:#cbd5e1; font-size:12px; text-align:center;">
+          <div style="color:#fff; font-weight:700; margin-bottom:4px;">Noma Hotel</div>
+          <div>Questions? <a href="mailto:nomapvtltd@gmail.com" style="color:#5eead4; text-decoration:none;">nomapvtltd@gmail.com</a></div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My profile{% endblock %}
+
+{% block head %}
+<style>
+  .profile-wrap { max-width: 1100px; margin: 0 auto; padding: 22px 18px 60px; }
+
+  /* ---------- Header card ---------- */
+  .profile-hero {
+    background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
+    color: #fff;
+    border-radius: 22px;
+    padding: 26px 28px;
+    display: flex; align-items: center; gap: 22px;
+    box-shadow: 0 20px 40px rgba(15, 118, 110, 0.25);
+    flex-wrap: wrap;
+  }
+  .profile-avatar {
+    width: 82px; height: 82px; flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,.18);
+    display: grid; place-items: center;
+    font-size: 32px; font-weight: 800; color: #fff;
+    border: 2px solid rgba(255,255,255,.28);
+    overflow: hidden;
+  }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-name h1 {
+    color: #fff; margin: 0 0 4px;
+    font-size: clamp(22px, 3.4vw, 30px); font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .profile-name p { margin: 0; color: rgba(255,255,255,.85); font-size: 14px; }
+  .profile-name .verified {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding: 4px 12px;
+    background: rgba(255,255,255,.18);
+    border-radius: 999px; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .profile-hero .actions {
+    margin-left: auto;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .profile-hero .actions a {
+    padding: 10px 16px; border-radius: 12px;
+    background: rgba(255,255,255,.16); color: #fff;
+    font-weight: 600; font-size: 14px;
+    backdrop-filter: blur(6px);
+    transition: background .15s ease;
+  }
+  .profile-hero .actions a:hover { background: rgba(255,255,255,.28); }
+
+  /* ---------- Stats row ---------- */
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .stat {
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.05);
+  }
+  .stat .label {
+    font-size: 11px; text-transform: uppercase;
+    color: var(--muted, #64748b); font-weight: 700; letter-spacing: 0.06em;
+  }
+  .stat .value {
+    font-size: 24px; font-weight: 800; margin-top: 6px;
+    color: var(--primary-dark, #0b5c5c);
+    letter-spacing: -0.01em;
+  }
+  .stat.confirmed .value { color: #047857; }
+  .stat.cancelled .value { color: #b91c1c; }
+  .stat.pending .value { color: #b45309; }
+
+  /* ---------- Tab strip ---------- */
+  .tabs {
+    display: flex; gap: 4px;
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    padding: 6px;
+    margin: 18px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabs button {
+    padding: 10px 16px;
+    border: none; background: transparent;
+    color: var(--muted, #64748b);
+    font-weight: 700; font-size: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tabs button:hover { color: var(--text, #0f172a); }
+  .tabs button.active {
+    background: var(--primary, #0f766e); color: #fff;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---------- Account card ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.04);
+  }
+  .panel h3 {
+    margin: 0 0 14px;
+    font-size: 18px; font-weight: 700;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .info-cell .label {
+    font-size: 11px; text-transform: uppercase;
+    color: var(--muted, #64748b); font-weight: 700; letter-spacing: 0.06em;
+  }
+  .info-cell .value {
+    font-size: 15px; font-weight: 600; margin-top: 4px;
+    color: var(--text, #0f172a);
+  }
+  .info-cell .value.muted { color: var(--muted, #64748b); font-weight: 500; }
+
+  /* ---------- Booking card (matches my_bookings style) ---------- */
+  .booking-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .booking-row h4 { margin: 0 0 4px; font-size: 16px; }
+  .booking-row .meta { color: var(--muted, #64748b); font-size: 13px; line-height: 1.5; }
+  .status-pill {
+    padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .status-pending   { background: #fef3c7; color: #92400e; }
+  .status-confirmed { background: #d1fae5; color: #065f46; }
+  .status-cancelled { background: #fee2e2; color: #991b1b; }
+  .status-completed { background: #dbeafe; color: #1e40af; }
+  .booking-row .total { font-weight: 800; color: var(--primary-dark, #0b5c5c); font-size: 16px; margin-top: 6px; }
+  .booking-row .action-col {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .booking-row .action-col a, .booking-row .action-col button {
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; border: none; cursor: pointer;
+    min-height: 32px;
+  }
+  .booking-row .pay {  background: var(--primary, #0f766e); color: #fff; }
+  .booking-row .cancel { background: #fee2e2; color: #991b1b; }
+  .booking-row .review { background: #fef3c7; color: #92400e; }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 30px;
+    color: var(--muted, #64748b);
+  }
+  .empty i { font-size: 36px; opacity: 0.5; }
+
+  /* Review card */
+  .review-row {
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+  .review-row .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; margin-bottom: 6px;
+  }
+  .review-row .score { color: #f59e0b; font-weight: 800; }
+
+  /* Edit form */
+  .edit-form input, .edit-form select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: #f8fafc;
+    font: inherit;
+  }
+  .edit-form .form-actions {
+    display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+  }
+
+  @media (max-width: 640px) {
+    .profile-hero { padding: 18px; }
+    .profile-hero .actions { width: 100%; margin-left: 0; }
+    .booking-row { grid-template-columns: 1fr; }
+    .booking-row .action-col { flex-direction: row; align-items: center; }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<section class="profile-wrap">
+
+  {# ---- Hero ---- #}
+  <div class="profile-hero">
+    <div class="profile-avatar">
+      {% if owner and owner.profile_pic %}
+        <img src="{{ owner.profile_pic.url }}" alt="">
+      {% else %}
+        {{ profile_user.first_name|slice:":1"|upper|default:profile_user.email|slice:":1"|upper }}
+      {% endif %}
+    </div>
+    <div class="profile-name">
+      <h1>
+        {% if profile_user.first_name or profile_user.last_name %}
+          {{ profile_user.first_name }} {{ profile_user.last_name }}
+        {% else %}
+          {{ profile_user.email }}
+        {% endif %}
+      </h1>
+      <p><i class="fa-regular fa-envelope" aria-hidden="true"></i> {{ profile_user.email }}</p>
+      <p style="margin-top:4px;"><i class="fa-regular fa-calendar" aria-hidden="true"></i>
+        Member since {{ profile_user.date_joined|date:"M Y" }}
+      </p>
+      {% if owner and owner.is_verified %}
+        <span class="verified"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
+      {% endif %}
+    </div>
+    <div class="actions">
+      <a href="{% url 'home' %}"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Browse hotels</a>
+      <a href="{% url 'logout_user' %}"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Logout</a>
+    </div>
+  </div>
+
+  {# ---- Stats ---- #}
+  <div class="profile-stats">
+    <div class="stat">
+      <div class="label">Total bookings</div>
+      <div class="value">{{ stats.total }}</div>
+    </div>
+    <div class="stat confirmed">
+      <div class="label">Confirmed</div>
+      <div class="value">{{ stats.confirmed|add:stats.completed }}</div>
+    </div>
+    <div class="stat pending">
+      <div class="label">Pending</div>
+      <div class="value">{{ stats.pending }}</div>
+    </div>
+    <div class="stat cancelled">
+      <div class="label">Cancelled</div>
+      <div class="value">{{ stats.cancelled }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Total spent</div>
+      <div class="value">₹ {{ total_spent }}</div>
+    </div>
+  </div>
+
+  {# ---- Tabs ---- #}
+  <div class="tabs" role="tablist">
+    <button type="button" class="active" data-tab="bookings" role="tab">
+      <i class="fa-solid fa-bookmark" aria-hidden="true"></i> Bookings
+    </button>
+    <button type="button" data-tab="account" role="tab">
+      <i class="fa-solid fa-user" aria-hidden="true"></i> Account details
+    </button>
+    <button type="button" data-tab="reviews" role="tab">
+      <i class="fa-regular fa-star" aria-hidden="true"></i> Reviews ({{ reviews|length }})
+    </button>
+  </div>
+
+  {# ---- Tab: Bookings ---- #}
+  <div class="tab-panel active" data-panel="bookings">
+    {% if bookings %}
+      {# Sub-tabs by status, all server-rendered for SEO + no-JS fallback #}
+      <div class="tabs" style="margin-top:0;">
+        <button type="button" class="active" data-subtab="upcoming">Upcoming</button>
+        <button type="button" data-subtab="past">Past</button>
+        <button type="button" data-subtab="cancelled">Cancelled</button>
+      </div>
+
+      <div class="tab-panel active" data-subpanel="upcoming">
+        {% for b in bookings %}
+          {% if b.status == 'pending' or b.status == 'confirmed' %}
+            {% include "_booking_row.html" with b=b %}
+          {% endif %}
+        {% endfor %}
+        {% with up=stats.pending|add:stats.confirmed %}
+          {% if up == 0 %}
+            <div class="empty"><i class="fa-regular fa-calendar-check"></i><p>No upcoming bookings. <a href="{% url 'home' %}">Find a stay →</a></p></div>
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <div class="tab-panel" data-subpanel="past">
+        {% for b in bookings %}
+          {% if b.status == 'completed' %}
+            {% include "_booking_row.html" with b=b %}
+          {% endif %}
+        {% endfor %}
+        {% if stats.completed == 0 %}
+          <div class="empty"><i class="fa-regular fa-clock"></i><p>No past stays yet.</p></div>
+        {% endif %}
+      </div>
+
+      <div class="tab-panel" data-subpanel="cancelled">
+        {% for b in bookings %}
+          {% if b.status == 'cancelled' %}
+            {% include "_booking_row.html" with b=b %}
+          {% endif %}
+        {% endfor %}
+        {% if stats.cancelled == 0 %}
+          <div class="empty"><i class="fa-regular fa-circle-xmark"></i><p>No cancelled bookings.</p></div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="panel empty">
+        <i class="fa-regular fa-bookmark"></i>
+        <p>You haven't booked any stays yet.</p>
+        <a href="{% url 'home' %}" class="btn-primary" style="margin-top:10px;">Browse hotels</a>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ---- Tab: Account details ---- #}
+  <div class="tab-panel" data-panel="account">
+    <div class="panel">
+      <h3>
+        Account details
+        <span style="margin-left: auto; display: inline-flex; gap: 8px;">
+          <a href="{% url 'account_change_password' %}" class="btn-pill"
+             title="Change your password" style="text-decoration: none;">
+            <i class="fa-solid fa-key" aria-hidden="true"></i> Change password
+          </a>
+          <button type="button" id="toggle-edit" class="btn-pill">
+            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
+          </button>
+        </span>
+      </h3>
+
+      {# Read-only view #}
+      <div id="account-view" class="info-grid">
+        <div class="info-cell">
+          <div class="label">First name</div>
+          <div class="value {% if not profile_user.first_name %}muted{% endif %}">
+            {{ profile_user.first_name|default:"— not set —" }}
+          </div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Last name</div>
+          <div class="value {% if not profile_user.last_name %}muted{% endif %}">
+            {{ profile_user.last_name|default:"— not set —" }}
+          </div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Email</div>
+          <div class="value">{{ profile_user.email }}</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Phone</div>
+          <div class="value {% if not owner.phone_number %}muted{% endif %}">
+            {{ owner.phone_number|default:"— not set —" }}
+          </div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Joined</div>
+          <div class="value">{{ profile_user.date_joined|date:"d F Y" }}</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Last login</div>
+          <div class="value {% if not profile_user.last_login %}muted{% endif %}">
+            {{ profile_user.last_login|date:"d M Y, H:i"|default:"never" }}
+          </div>
+        </div>
+      </div>
+
+      {# Edit form (hidden by default) #}
+      <form id="account-edit" class="edit-form" method="POST"
+            action="{% url 'update_profile' %}" enctype="multipart/form-data"
+            style="display:none; margin-top: 8px;">
+        {% csrf_token %}
+        <div class="info-grid">
+          <div class="info-cell">
+            <div class="label">First name</div>
+            {{ profile_form.first_name }}
+          </div>
+          <div class="info-cell">
+            <div class="label">Last name</div>
+            {{ profile_form.last_name }}
+          </div>
+          <div class="info-cell">
+            <div class="label">Phone</div>
+            {{ profile_form.phone_number }}
+          </div>
+          <div class="info-cell">
+            <div class="label">Profile picture</div>
+            {{ profile_form.profile_pic }}
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save changes</button>
+          <button type="button" id="cancel-edit" class="btn-pill">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ---- Tab: Reviews ---- #}
+  <div class="tab-panel" data-panel="reviews">
+    {% for r in reviews %}
+      <div class="review-row">
+        <div class="head">
+          <strong>{{ r.hotel.hotel_name }}</strong>
+          <span class="score">{{ r.score }}★</span>
+        </div>
+        {% if r.title %}<div style="font-weight:700; margin-bottom:4px;">{{ r.title }}</div>{% endif %}
+        <p class="muted" style="margin: 0;">{{ r.body|linebreaksbr }}</p>
+        <small class="muted" style="display:block; margin-top:6px;">
+          Written {{ r.created_at|date:"d M Y" }}
+        </small>
+      </div>
+    {% empty %}
+      <div class="panel empty">
+        <i class="fa-regular fa-star"></i>
+        <p>You haven't written any reviews yet. Reviews unlock after your stay is complete.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</section>
+
+<script>
+  // Top-level tabs
+  document.querySelectorAll('.tabs > [data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tabs > [data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-panel[data-panel]').forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+    });
+  });
+  // Sub-tabs inside Bookings
+  document.querySelectorAll('.tabs > [data-subtab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.subtab;
+      document.querySelectorAll('.tabs > [data-subtab]').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-panel[data-subpanel]').forEach(p => p.classList.toggle('active', p.dataset.subpanel === target));
+    });
+  });
+  // Inline edit toggle for Account details
+  const view = document.getElementById('account-view');
+  const edit = document.getElementById('account-edit');
+  const toggleBtn = document.getElementById('toggle-edit');
+  const cancelBtn = document.getElementById('cancel-edit');
+  function setEdit(on){
+    view.style.display = on ? 'none' : 'grid';
+    edit.style.display = on ? 'block' : 'none';
+    toggleBtn.style.display = on ? 'none' : 'inline-flex';
+  }
+  toggleBtn && toggleBtn.addEventListener('click', () => setEdit(true));
+  cancelBtn && cancelBtn.addEventListener('click', () => setEdit(false));
+
+  // Open the right tab if the URL has a hash like #bookings / #account / #reviews
+  const hash = (location.hash || '').replace('#', '');
+  if (['bookings','account','reviews'].includes(hash)) {
+    document.querySelector(`.tabs > [data-tab="${hash}"]`)?.click();
+  }
+</script>
+{% endblock %}

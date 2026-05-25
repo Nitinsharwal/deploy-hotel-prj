@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% comment %}
+  Shared shell for the super-admin pages. Extends the site base.html so we
+  get the navbar/footer, but adds a thin top strip so it's obvious you're in
+  a privileged area.
+{% endcomment %}
+{% load static %}
+{% block head %}
+<style>
+  .sa-strip {
+    background: linear-gradient(90deg, #be123c 0%, #9f1239 100%);
+    color: #fff;
+    text-align: center;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+  }
+  .sa-strip code { background: rgba(255,255,255,.18); padding: 2px 8px; border-radius: 6px; }
+
+  .sa-wrap { max-width: 1200px; margin: 0 auto; padding: 18px; }
+  .sa-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    padding: 22px; box-shadow: 0 6px 18px rgba(15,23,42,.05);
+    margin-bottom: 16px;
+  }
+  .sa-card h3 {
+    margin: 0 0 14px; font-size: 17px; font-weight: 700;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+
+  .sa-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .sa-stat {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .sa-stat .label {
+    font-size: 11px; text-transform: uppercase;
+    color: #64748b; font-weight: 700; letter-spacing: 0.06em;
+  }
+  .sa-stat .value {
+    font-size: 22px; font-weight: 800; margin-top: 4px; color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+  .sa-stat.danger  .value { color: #b91c1c; }
+  .sa-stat.success .value { color: #047857; }
+  .sa-stat.primary .value { color: var(--primary-dark, #0b5c5c); }
+
+  table.sa { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.sa thead th {
+    text-align: left; padding: 12px 14px; background: #f8fafc;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #64748b; font-weight: 800;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  table.sa tbody td {
+    padding: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+  }
+  table.sa tbody tr:hover { background: #f8fafc; }
+
+  .sa-pill {
+    padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .sa-pill.verified   { background: #d1fae5; color: #065f46; }
+  .sa-pill.unverified { background: #fee2e2; color: #991b1b; }
+  .sa-pill.pending    { background: #fef3c7; color: #92400e; }
+  .sa-pill.paid       { background: #d1fae5; color: #065f46; }
+  .sa-pill.waived     { background: #e0e7ff; color: #3730a3; }
+
+  .sa-btn {
+    padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer;
+    font-weight: 700; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none;
+    min-height: 36px;
+    transition: transform .12s ease, opacity .15s ease;
+  }
+  .sa-btn:active { transform: scale(0.97); }
+  .sa-btn.primary { background: var(--primary, #0f766e); color: #fff; }
+  .sa-btn.subtle  { background: #f1f5f9; color: #0f172a; }
+  .sa-btn.danger  { background: #fee2e2; color: #991b1b; }
+  .sa-btn.success { background: #d1fae5; color: #065f46; }
+
+  .sa-search {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .sa-search input, .sa-search select {
+    padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px;
+    font: inherit; background: #fff;
+  }
+  .sa-search input { flex: 1; min-width: 200px; }
+
+  .sa-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .sa-form-grid label { display: block; }
+  .sa-form-grid label span {
+    font-size: 11px; color: #64748b; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+    display: block;
+  }
+  .sa-form-grid input, .sa-form-grid select, .sa-form-grid textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0;
+    border-radius: 10px; background: #f8fafc; font: inherit;
+  }
+
+  @media (max-width: 720px) {
+    .sa-wrap { padding: 12px; }
+    table.sa thead { display: none; }
+    table.sa, table.sa tbody, table.sa tr, table.sa td { display: block; }
+    table.sa tr {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      margin-bottom: 10px; padding: 12px 14px;
+    }
+    table.sa td {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 6px 0; border: none; gap: 12px; font-size: 13.5px;
+    }
+    table.sa td::before {
+      content: attr(data-label);
+      font-weight: 800; color: #64748b; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+  }
+</style>
+{% endblock %}
+{% block body %}
+<div class="sa-strip">
+  🔒 SUPER ADMIN AREA &nbsp;·&nbsp; logged in as <code>{{ request.user.email|default:request.user.username }}</code>
+</div>
+{% block sa_body %}{% endblock %}
+{% endblock %}

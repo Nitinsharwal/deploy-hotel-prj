@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Slip — {{ booking.reference }}</title>
+  <style>
+    /* Inline so the same HTML renders fine inside an email body too. */
+    body {
+      margin: 0; padding: 30px 18px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #f1f5f9; color: #0f172a;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .slip {
+      max-width: 640px; margin: 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(15,23,42,.12);
+    }
+    .slip-header {
+      background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
+      color: #fff;
+      padding: 28px 30px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .slip-header h1 {
+      margin: 0; font-size: 24px; letter-spacing: -0.01em;
+    }
+    .slip-header .tag {
+      background: rgba(255,255,255,.18);
+      padding: 6px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .slip-ref {
+      padding: 16px 30px;
+      background: #ecfdf5;
+      color: #065f46;
+      font-weight: 700; letter-spacing: 0.02em;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 14px;
+    }
+    .slip-ref code { font-size: 16px; background: rgba(6,95,70,.1); padding: 4px 10px; border-radius: 8px; }
+    .slip-body { padding: 28px 30px; }
+    .slip-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    .slip-row:last-child { border-bottom: none; }
+    .slip-row .label { color: #64748b; font-weight: 600; }
+    .slip-row .value { font-weight: 700; }
+    .slip-section-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #64748b; font-weight: 700;
+      margin: 20px 0 8px;
+    }
+    .slip-total {
+      margin-top: 18px; padding: 18px;
+      background: #f8fafc; border-radius: 12px;
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .slip-total .amount {
+      font-size: 28px; font-weight: 800; color: #0f766e;
+    }
+    .slip-footer {
+      padding: 20px 30px; background: #0f172a; color: #cbd5e1;
+      font-size: 12px; text-align: center; line-height: 1.6;
+    }
+    .slip-footer strong { color: #fff; }
+    .slip-stamp {
+      transform: rotate(-8deg);
+      border: 3px solid #10b981;
+      color: #10b981;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      font-size: 14px;
+      display: inline-block;
+    }
+
+    /* Print: hide screen-only controls, white page background */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print { display: none !important; }
+      .slip { box-shadow: none; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  {# Screen-only action bar — hidden when printing #}
+  <div class="no-print" style="max-width: 640px; margin: 0 auto 14px; display: flex; gap: 8px; justify-content: flex-end;">
+    <button type="button" onclick="window.print()"
+            style="padding: 10px 18px; border-radius: 10px; border: none; background: #0f766e; color: #fff; font-weight: 700; cursor: pointer;">
+      🖨️ Print / Save as PDF
+    </button>
+    <a href="{% url 'profile' %}#bookings"
+       style="padding: 10px 18px; border-radius: 10px; background: #fff; color: #0f172a; font-weight: 700; text-decoration: none; border: 1px solid #e2e8f0;">
+      ← My bookings
+    </a>
+  </div>
+
+  <div class="slip">
+    <div class="slip-header">
+      <h1>NOMA · Booking Slip</h1>
+      <span class="tag">{{ booking.get_status_display|upper }}</span>
+    </div>
+
+    <div class="slip-ref">
+      <div>Reference</div>
+      <code>{{ booking.reference }}</code>
+    </div>
+
+    <div class="slip-body">
+      <div class="slip-section-title">Guest</div>
+      <div class="slip-row"><span class="label">Name</span><span class="value">{{ booking.guest_first_name }} {{ booking.guest_last_name }}</span></div>
+      <div class="slip-row"><span class="label">Email</span><span class="value">{{ booking.guest_email }}</span></div>
+      {% if booking.guest_phone %}
+        <div class="slip-row"><span class="label">Phone</span><span class="value">{{ booking.guest_phone }}</span></div>
+      {% endif %}
+
+      <div class="slip-section-title">Stay</div>
+      <div class="slip-row"><span class="label">Hotel</span><span class="value">{{ booking.room.hotel.hotel_name }}</span></div>
+      <div class="slip-row"><span class="label">Room</span><span class="value">{{ booking.room.name }} ({{ booking.room.get_room_type_display }})</span></div>
+      <div class="slip-row"><span class="label">Location</span><span class="value">{{ booking.room.hotel.hotel_location }}</span></div>
+      <div class="slip-row"><span class="label">Check-in</span><span class="value">{{ booking.start_date|date:"l, d M Y" }}</span></div>
+      <div class="slip-row"><span class="label">Check-out</span><span class="value">{{ booking.end_date|date:"l, d M Y" }}</span></div>
+      <div class="slip-row"><span class="label">Nights</span><span class="value">{{ booking.nights }}</span></div>
+      <div class="slip-row"><span class="label">Guests</span><span class="value">{{ booking.num_guests }}</span></div>
+
+      <div class="slip-section-title">Payment</div>
+      <div class="slip-row"><span class="label">Rate per night</span><span class="value">₹ {{ booking.room.base_price }}</span></div>
+      <div class="slip-row"><span class="label">Subtotal</span><span class="value">₹ {{ booking.total_amount }}</span></div>
+      {% with p=booking.payments.last %}
+        {% if p %}
+          <div class="slip-row"><span class="label">Method</span><span class="value">{{ p.get_method_display }}</span></div>
+          <div class="slip-row"><span class="label">Transaction ID</span><span class="value" style="font-family: monospace; font-size: 12px;">{{ p.transaction_id|default:"—" }}</span></div>
+          <div class="slip-row"><span class="label">Paid on</span><span class="value">{{ p.updated_at|date:"d M Y, H:i" }}</span></div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="slip-total">
+        <div>
+          <div class="slip-section-title" style="margin: 0;">Total paid</div>
+          <span class="slip-stamp">PAID</span>
+        </div>
+        <span class="amount">₹ {{ booking.total_amount }}</span>
+      </div>
+    </div>
+
+    <div class="slip-footer">
+      <strong>Noma Hotel</strong> · Thank you for choosing us!<br>
+      Show this slip at check-in. Cancellations subject to hotel policy.<br>
+      <br>
+      📧 nomapvtltd@gmail.com · 📞 +91 8221985564
+    </div>
+  </div>
+</body>
+</html>

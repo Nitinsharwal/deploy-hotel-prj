@@ -1,0 +1,62 @@
+{% extends "vendor/ven_base.html" %}
+{% load static %}
+{% block head %}{% endblock head %}
+{% block body %}
+<div class="vendor-hero">
+  <div>
+    <p class="eyebrow">Add hotel</p>
+    <h2>Create a new listing</h2>
+    <p class="muted">Provide details, set pricing, and attach amenities.</p>
+  </div>
+</div>
+
+<section class="auth-shell" style="padding-top:0;">
+  <div class="auth-card" style="grid-template-columns: 1fr;">
+    <form class="auth-form" style="padding: 22px;" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="grid-2">
+        <label class="form-field">
+          <span>Hotel name</span>
+          <input type="text" id="hotel_name" name="hotel_name" placeholder="Enter your hotel name" required>
+        </label>
+        <label class="form-field">
+          <span>Location</span>
+          <input type="text" id="location" name="hotel_location" placeholder="City, Area" required>
+        </label>
+      </div>
+
+      <label class="form-field">
+        <span>Description</span>
+        <textarea class="messagearea" id="description" rows="4" name="hotel_description" placeholder="Describe your property" required></textarea>
+      </label>
+
+      <div class="grid-2">
+        <label class="form-field">
+          <span>Hotel Price</span>
+          <input type="number" id="price" name="hotel_price" placeholder="Base price" required>
+        </label>
+        <label class="form-field">
+          <span>Offer Price</span>
+          <input type="number" id="offer_price" name="hotel_offer_price" placeholder="Discounted price" required>
+        </label>
+      </div>
+
+      <label class="form-field">
+        <span>Amenities</span>
+        <div class="amenity-grid">
+          {% for aminitie in Amenities %}
+          <label class="chip-check">
+            <input type="checkbox" name="hotel_amenities" value="{{aminitie.id}}">
+            <span>{{aminitie.amenities_name}}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </label>
+
+      <div class="form-actions" style="justify-content:flex-end;">
+        <button type="submit" class="btn-primary">Save hotel</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

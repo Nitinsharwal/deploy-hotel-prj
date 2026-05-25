@@ -1,0 +1,35 @@
+# Shared config for ruff (lint + format) and any other tools that read pyproject.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+  "migrations",
+  ".venv",
+  "staticfiles",
+  "media",
+  "hotel_app/seed.py",   # one-off Faker script, uses star imports intentionally
+]
+
+[tool.ruff.lint]
+# Keep the rule set tight on purpose — too many rules == merge-conflict factory.
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # isort
+  "B",    # flake8-bugbear
+  "UP",   # pyupgrade
+  "DJ",   # flake8-django
+]
+ignore = [
+  "E501",  # let the formatter handle long lines
+  "B008",  # function calls in argument defaults are common in Django
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/settings.py" = ["F403", "F405"]   # star imports are fine here
+"**/__init__.py" = ["F401"]            # re-exports
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

@@ -1,0 +1,25 @@
+{
+  "name": "Noma — Hotel Booking",
+  "short_name": "Noma",
+  "description": "Find the right stay, fast. Clean rooms, clear prices, instant booking.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f8fb",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/static/hotel_app/images/logohootel.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/hotel_app/images/logohootel.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

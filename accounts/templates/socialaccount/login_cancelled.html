@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}Sign-in cancelled{% endblock %}
+
+{% block body %}
+<section class="auth-shell">
+  <div class="auth-card" style="grid-template-columns: 1fr;">
+    <div style="text-align: center; padding: 36px 28px;">
+
+      {# Circular icon — matches the success/checkmark vibe but in a cancel/info color #}
+      <div style="
+        width: 72px; height: 72px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        background: #fef3c7;
+        color: #b45309;
+        display: grid; place-items: center;
+        font-size: 28px;
+      ">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      </div>
+
+      <p class="eyebrow" style="margin: 0 0 4px;">Sign-in</p>
+      <h2 style="margin: 0 0 8px; font-size: 24px;">Sign-in cancelled</h2>
+      <p class="muted" style="margin: 0 0 22px; line-height: 1.5;">
+        You backed out of signing in with your social account.
+        No problem &mdash; nothing has changed on your account.
+      </p>
+
+      <div style="display: grid; gap: 10px; max-width: 280px; margin: 0 auto;">
+        <a href="{% url 'login_page' %}" class="btn-primary"
+           style="padding: 13px 18px; border-radius: 12px; text-decoration: none; text-align: center;">
+          <i class="fa-solid fa-right-to-bracket" aria-hidden="true" style="margin-right: 8px;"></i>
+          Try signing in again
+        </a>
+        <a href="{% url 'home' %}" class="btn-pill"
+           style="padding: 11px 18px; text-decoration: none; text-align: center;">
+          <i class="fa-solid fa-house" aria-hidden="true" style="margin-right: 6px;"></i>
+          Back to home
+        </a>
+      </div>
+
+      <p class="muted" style="font-size: 12px; margin-top: 22px;">
+        Tip: if Google blocked the popup, try again with pop-ups allowed for this site.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

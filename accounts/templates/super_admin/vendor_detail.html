@@ -1,0 +1,221 @@
+{% extends "super_admin/_base.html" %}
+{% block title %}Super Admin · {{ vendor.business_name }}{% endblock %}
+{% block sa_body %}
+<div class="sa-wrap">
+
+  <p style="margin: 12px 0;">
+    <a href="{% url 'super_dashboard' %}" class="sa-btn subtle">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to vendors
+    </a>
+  </p>
+
+  {# --- Vendor header --- #}
+  <div class="sa-card">
+    <div style="display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:center;">
+      <div>
+        <div style="font-size: 11px; text-transform:uppercase; letter-spacing:.08em; color:#64748b; font-weight:700;">Vendor</div>
+        <h2 style="margin: 4px 0 8px;">{{ vendor.business_name }}</h2>
+        <div style="color:#64748b; font-size:14px; line-height:1.6;">
+          <i class="fa-regular fa-user" aria-hidden="true"></i> {{ vendor.user.first_name }} {{ vendor.user.last_name }}<br>
+          <i class="fa-regular fa-envelope" aria-hidden="true"></i> {{ vendor.user.email }}<br>
+          <i class="fa-solid fa-phone" aria-hidden="true"></i> {{ vendor.phone_number|default:"— no phone —" }}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        {% if vendor.is_verified %}
+          <span class="sa-pill verified" style="font-size: 13px; padding: 6px 14px;">✓ Verified</span>
+        {% else %}
+          <span class="sa-pill unverified" style="font-size: 13px; padding: 6px 14px;">Unverified</span>
+        {% endif %}
+        <form method="POST" action="{% url 'super_toggle_verified' vendor.id %}" style="margin-top:10px;">
+          {% csrf_token %}
+          <button type="submit" class="sa-btn {% if vendor.is_verified %}danger{% else %}success{% endif %}">
+            {% if vendor.is_verified %}
+              <i class="fa-solid fa-xmark"></i> Mark unverified
+            {% else %}
+              <i class="fa-solid fa-check"></i> Mark verified
+            {% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# --- Totals --- #}
+  <div class="sa-stats">
+    <div class="sa-stat danger">
+      <div class="label">Outstanding</div>
+      <div class="value">₹ {{ totals.outstanding|floatformat:0 }}</div>
+    </div>
+    <div class="sa-stat success">
+      <div class="label">Paid to date</div>
+      <div class="value">₹ {{ totals.paid|floatformat:0 }}</div>
+    </div>
+    <div class="sa-stat">
+      <div class="label">Waived</div>
+      <div class="value">₹ {{ totals.waived|floatformat:0 }}</div>
+    </div>
+    <div class="sa-stat primary">
+      <div class="label">Hotels</div>
+      <div class="value">{{ vendor_hotels.count }}</div>
+    </div>
+  </div>
+
+  {# --- Hotels --- #}
+  <div class="sa-card">
+    <h3>Hotels</h3>
+    {% if vendor_hotels %}
+      <table class="sa">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Location</th>
+            <th>Price</th>
+            <th>Rooms</th>
+            <th>Bookings</th>
+            <th>Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in vendor_hotels %}
+            <tr>
+              <td data-label="Name"><strong>{{ h.hotel_name }}</strong></td>
+              <td data-label="Location">{{ h.hotel_location }}</td>
+              <td data-label="Price">₹ {{ h.hotel_offer_price }}</td>
+              <td data-label="Rooms">{{ h.n_rooms }}</td>
+              <td data-label="Bookings">{{ h.n_bookings }}</td>
+              <td data-label="Active">
+                {% if h.is_active %}
+                  <span class="sa-pill verified">Live</span>
+                {% else %}
+                  <span class="sa-pill unverified">Off</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">No hotels yet.</p>
+    {% endif %}
+  </div>
+
+  {# --- Add a new charge --- #}
+  <div class="sa-card">
+    <h3>Add a charge</h3>
+    <form method="POST" action="{% url 'super_create_charge' vendor.id %}">
+      {% csrf_token %}
+      <div class="sa-form-grid">
+        <label>
+          <span>Type</span>
+          <select name="kind">
+            <option value="publish">Hotel publishing fee</option>
+            <option value="boost">Listing boost</option>
+            <option value="subscription">Monthly subscription</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Amount (₹)</span>
+          <input type="number" name="amount" step="0.01" min="0" placeholder="e.g. 999" required>
+        </label>
+        <label>
+          <span>Linked hotel (optional)</span>
+          <select name="hotel_id">
+            <option value="">— Account-wide —</option>
+            {% for h in vendor_hotels %}
+              <option value="{{ h.id }}">{{ h.hotel_name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>Due date</span>
+          <input type="date" name="due_date"
+                 title="If omitted, monthly subs default to end-of-month, other kinds to 30 days out.">
+        </label>
+        <label>
+          <span>Grace days (after due)</span>
+          <input type="number" name="grace_days" value="15" min="0" max="180" step="1"
+                 title="After this many days past the due date, the vendor's hotels disappear from public listings.">
+        </label>
+        <label style="grid-column: 1 / -1;">
+          <span>Description</span>
+          <input type="text" name="description" placeholder="e.g. Q3 publishing fee" maxlength="200">
+        </label>
+        <label style="grid-column: 1 / -1;">
+          <span>Internal notes (only superusers see this)</span>
+          <textarea name="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </label>
+      </div>
+      <button type="submit" class="sa-btn primary" style="margin-top:14px;">
+        <i class="fa-solid fa-plus"></i> Create charge
+      </button>
+    </form>
+  </div>
+
+  {# --- Charges history --- #}
+  <div class="sa-card">
+    <h3>Charges history ({{ charges|length }})</h3>
+    {% if charges %}
+      <table class="sa">
+        <thead>
+          <tr>
+            <th>Created</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Hotel</th>
+            <th>Due</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in charges %}
+            <tr>
+              <td data-label="Created">{{ c.created_at|date:"d M Y" }}</td>
+              <td data-label="Type">{{ c.get_kind_display }}</td>
+              <td data-label="Description">{{ c.description|default:"—" }}</td>
+              <td data-label="Hotel">{% if c.hotel %}{{ c.hotel.hotel_name }}{% else %}<span class="muted">— account —</span>{% endif %}</td>
+              <td data-label="Due">
+                {% if c.due_date %}
+                  {{ c.due_date|date:"d M Y" }}
+                  {% if c.is_overdue %}
+                    <div style="font-size:11px; color:#b91c1c; font-weight:700;">OVERDUE</div>
+                  {% elif c.is_in_reminder_window %}
+                    <div style="font-size:11px; color:#b45309; font-weight:700;">REMINDING</div>
+                  {% endif %}
+                {% else %}<span class="muted">—</span>{% endif %}
+              </td>
+              <td data-label="Amount"><strong>₹ {{ c.amount }}</strong></td>
+              <td data-label="Status"><span class="sa-pill {{ c.status }}">{{ c.get_status_display }}</span></td>
+              <td data-label="Actions">
+                {% if c.status == 'pending' %}
+                  <a class="sa-btn subtle" href="{% url 'super_edit_charge' c.id %}" title="Edit due date, amount, etc.">
+                    <i class="fa-solid fa-pen"></i> Edit
+                  </a>
+                  <form method="POST" action="{% url 'super_update_charge' c.id 'paid' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="sa-btn success" type="submit"><i class="fa-solid fa-check"></i> Paid</button>
+                  </form>
+                  <form method="POST" action="{% url 'super_update_charge' c.id 'waived' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="sa-btn subtle" type="submit">Waive</button>
+                  </form>
+                {% endif %}
+                <form method="POST" action="{% url 'super_update_charge' c.id 'delete' %}" style="display:inline;"
+                      onsubmit="return confirm('Delete this charge? Cannot be undone.');">
+                  {% csrf_token %}
+                  <button class="sa-btn danger" type="submit"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin:0;">No charges yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
