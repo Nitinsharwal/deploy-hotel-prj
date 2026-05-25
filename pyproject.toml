@@ -16,6 +16,19 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
+# We're a deployable Django app, not a pip-installable library — there is
+# nothing for setuptools to discover and bundle. Without this, auto-discovery
+# trips on directories like `hotels/` and `profile/` (which hold uploaded
+# images, not Python code) and the build crashes.
+[tool.setuptools]
+packages = []
+
+# uv-specific: explicitly tell uv NOT to build/install the project itself,
+# just resolve and install dependencies from requirements.txt. This is the
+# correct mode for an "application" rather than a "library".
+[tool.uv]
+package = false
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
