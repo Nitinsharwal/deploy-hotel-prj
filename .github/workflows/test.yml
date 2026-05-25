@@ -9,6 +9,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # Job-level env: every step inherits these, so we don't have to repeat
+    # them on each step. pytest-django imports Django settings DURING the
+    # `pytest_load_initial_conftests` hook (before our conftest.py top-level
+    # code runs), so setting SECRET_KEY in conftest is too late. Setting it
+    # here means the Python process already has it when Django boots.
+    env:
+      SECRET_KEY: ci-test-secret-key-not-for-production
+      DEBUG: "True"
+      ALLOWED_HOSTS: "testserver,localhost,127.0.0.1"
+      AXES_ENABLED: "False"
+      # Empty REDIS_URL → falls back to LocMemCache; no Redis service needed in CI.
+      REDIS_URL: ""
+
     strategy:
       fail-fast: false
       matrix:
@@ -30,11 +44,6 @@ jobs:
 
       - name: Django system check
         run: python manage.py check
-        env:
-          # conftest.py overrides these for actual tests, but `manage.py check`
-          # runs without conftest, so we still need a few vars set.
-          SECRET_KEY: ci-test-secret
-          DEBUG: "True"
 
       - name: Run tests
         run: pytest -v
