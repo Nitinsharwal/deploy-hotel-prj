@@ -1,4 +1,25 @@
 # Shared config for ruff (lint + format) and any other tools that read pyproject.
+#
+# We keep `requirements.txt` as the single source of truth for dependencies
+# (pip-installable, simple to read, plays nice with every host). The [project]
+# table below exists ONLY so package managers like uv — which Vercel now uses
+# during deploy — find valid project metadata. They read deps from the file
+# referenced under [tool.setuptools.dynamic].
+
+[project]
+name = "noma-hotel"
+version = "0.1.0"
+description = "Django-based hotel booking platform (Noma)."
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 
 [tool.ruff]
 line-length = 100
