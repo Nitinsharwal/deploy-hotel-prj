@@ -23,5 +23,4 @@ services:
         value: "3.12"
       - key: DEBUG
         value: "False"
-      # All other secrets (SECRET_KEY, GOOGLE_OAUTH_*, EMAIL_*, REDIS_URL,
-      # RAZORPAY_*) come from the dashboard — never commit them here.
+
