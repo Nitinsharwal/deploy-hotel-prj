@@ -280,11 +280,29 @@ STATICFILES_STORAGE = (
     if DEBUG
     else "whitenoise.storage.CompressedStaticFilesStorage"
 )
-# WhiteNoise: cache hashed static files for 1 year — they have a content
-# hash in the filename so changes invalidate themselves. Combined with a
-# CDN (Cloudflare etc.) this means every CSS/JS/font is served from edge
-# memory after the first visit per region.
-WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 year
+# WhiteNoise: long cache because filenames are stable (no content hash now).
+# Lower than the manifest-storage default (1 year) because clients won't get
+# automatic cache-busting on deploys. 1 hour = sane default for an MVP.
+WHITENOISE_MAX_AGE = 60 * 60  # 1 hour
+
+# Critical for serverless deployment (Vercel / AWS Lambda):
+#
+# WHITENOISE_USE_FINDERS = True tells WhiteNoise to serve files using
+# Django's staticfiles finders (AppDirectoriesFinder + FileSystemFinder),
+# i.e. directly from each app's `static/` dir + STATICFILES_DIRS, INSTEAD of
+# requiring `collectstatic` output to exist at STATIC_ROOT.
+#
+# Why we need this: Vercel's @vercel/python builder is inconsistent about
+# whether `staticfiles/` (collectstatic output) ends up inside the deployed
+# Lambda. Source `static/` dirs are always there (they're part of the app
+# code that gets imported). With this flag, WhiteNoise just serves from
+# wherever Django itself would look — bulletproof on serverless.
+#
+# WHITENOISE_AUTOREFRESH = True makes WhiteNoise rebuild its file index on
+# each request rather than caching it at startup. Slightly slower per request
+# but means cold-starts don't get stuck on a stale snapshot.
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
