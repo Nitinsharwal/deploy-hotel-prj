@@ -264,12 +264,21 @@ STATICFILES_DIRS = [BASE_DIR / "hotel_app/static"]
 
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# Use hashed, compressed files for production; simpler storage in debug to avoid
-# manifest errors during local development.
+# Storage backend:
+#   - In dev (DEBUG=True): plain StaticFilesStorage — serves directly from
+#     app `static/` dirs without needing collectstatic.
+#   - In prod: CompressedStaticFilesStorage — WhiteNoise still compresses
+#     + serves the files, but no manifest is required.
+#
+# We used to use CompressedManifestStaticFilesStorage which adds content-
+# hash filenames for cache busting, but it crashes the entire app at runtime
+# if the `staticfiles.json` manifest isn't bundled into the deployed Lambda
+# (Vercel's @vercel/python builder doesn't include it by default). The
+# Compressed variant has no manifest dependency so deployments are reliable.
 STATICFILES_STORAGE = (
     "django.contrib.staticfiles.storage.StaticFilesStorage"
     if DEBUG
-    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    else "whitenoise.storage.CompressedStaticFilesStorage"
 )
 # WhiteNoise: cache hashed static files for 1 year — they have a content
 # hash in the filename so changes invalidate themselves. Combined with a

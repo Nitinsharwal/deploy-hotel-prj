@@ -6,15 +6,14 @@
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.12",
-        "maxLambdaSize": "50mb"
+        "maxLambdaSize": "50mb",
+        "includeFiles": "staticfiles/**"
       }
     }
   ],
   "buildCommand": "bash build_files.sh",
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "hotel_prj/asgi.py"
-    }
+    { "src": "/static/(.*)", "dest": "/staticfiles/$1" },
+    { "src": "/(.*)",        "dest": "hotel_prj/asgi.py" }
   ]
 }
