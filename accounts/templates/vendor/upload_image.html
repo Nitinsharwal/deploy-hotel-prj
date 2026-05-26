@@ -34,16 +34,18 @@
   .img-hero p { margin: 2px 0 0; color: var(--muted, #64748b); font-size: 14px; }
   .img-hero .right { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* Drop zone — the focal point */
+  /* Drop zone — the focal point. Constrained width keeps it readable on
+     wide screens; padding flexes with viewport. */
   .drop-zone {
     position: relative;
+    max-width: 720px;
+    margin: 0 auto 22px;
     background: #fff;
     border: 2px dashed #cbd5e1;
     border-radius: 18px;
-    padding: 32px 22px;
+    padding: clamp(28px, 5vw, 44px) clamp(20px, 4vw, 36px);
     text-align: center;
     transition: border-color .2s ease, background .2s ease, transform .15s ease;
-    margin-bottom: 22px;
   }
   .drop-zone.is-drag {
     border-color: var(--primary, #0f766e);
@@ -55,50 +57,72 @@
     width: 100%; height: 100%;
     opacity: 0; cursor: pointer;
   }
-  .drop-zone .icon {
+
+  /* The hint group (icon + title + sub + format pill) sits as one column,
+     centered, regardless of whether files are selected. */
+  .drop-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .drop-hint .icon {
     width: 64px; height: 64px;
-    margin: 0 auto 12px;
     background: var(--primary-soft, #ccfbf1); color: var(--primary, #0f766e);
     border-radius: 50%;
     display: grid; place-items: center;
     font-size: 26px;
+    margin-bottom: 6px;
   }
-  .drop-zone h3 { margin: 0 0 4px; font-size: 18px; color: #0f172a; }
-  .drop-zone .sub { margin: 0; color: var(--muted, #64748b); font-size: 14px; }
-  .drop-zone .formats {
-    display: inline-block; margin-top: 12px;
+  .drop-hint h3 { margin: 0; font-size: 18px; color: #0f172a; font-weight: 700; }
+  .drop-hint .sub { margin: 0; color: var(--muted, #64748b); font-size: 14px; }
+  .drop-hint .formats {
+    display: inline-block; margin-top: 6px;
     font-size: 12px; color: var(--muted, #64748b);
-    background: #f1f5f9; padding: 4px 10px; border-radius: 999px;
+    background: #f1f5f9; padding: 5px 12px; border-radius: 999px;
   }
 
-  /* Preview thumbnails for newly selected files (pre-upload) */
+  /* Preview thumbnails for newly selected files. Flex+wrap+center keeps a
+     single thumbnail centered AND lets multiple wrap into a tidy row. */
   .preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
-    margin-top: 18px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .preview-grid:empty {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
   }
   .preview-grid .thumb {
     position: relative;
-    border-radius: 12px; overflow: hidden;
+    width: 130px;
     aspect-ratio: 4/3;
+    border-radius: 12px; overflow: hidden;
     background: #f1f5f9;
     border: 1px solid var(--border, #e2e8f0);
+    box-shadow: 0 4px 14px rgba(15,23,42,.06);
   }
   .preview-grid .thumb img {
-    width: 100%; height: 100%; object-fit: cover;
+    width: 100%; height: 100%; object-fit: cover; display: block;
   }
   .preview-grid .thumb .name {
     position: absolute; left: 6px; right: 6px; bottom: 6px;
     background: rgba(15,23,42,.75); color: #fff;
     font-size: 10px; padding: 3px 6px; border-radius: 6px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    text-align: left;
+    text-align: center;
   }
 
   .upload-actions {
+    max-width: 720px;
+    margin: 0 auto;
     display: flex; justify-content: space-between; gap: 10px;
-    align-items: center; margin-top: 18px;
+    align-items: center; margin-top: 14px;
     flex-wrap: wrap;
   }
   .upload-actions .count {
@@ -207,12 +231,17 @@
       <input type="file" id="images" name="images"
              accept="image/jpeg,image/png,image/webp,image/gif"
              multiple required>
-      <div class="icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
-      <h3 id="drop-title">Drop images here</h3>
-      <p class="sub">or click anywhere in this box to browse</p>
-      <span class="formats">JPEG · PNG · WebP · GIF · up to 5 MB each</span>
 
-      <!-- pre-upload previews -->
+      {# Hint group — stays centered as one column regardless of file count. #}
+      <div class="drop-hint">
+        <div class="icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></div>
+        <h3 id="drop-title">Drop images here</h3>
+        <p class="sub">or click anywhere in this box to browse</p>
+        <span class="formats">JPEG · PNG · WebP · GIF · up to 5 MB each</span>
+      </div>
+
+      {# Pre-upload previews appear here. Flex+center keeps a single thumbnail
+         centered; multiple thumbnails wrap into a tidy row. #}
       <div class="preview-grid" id="preview-grid"></div>
     </label>
 

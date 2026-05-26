@@ -428,3 +428,8 @@ if not DEBUG:
     X_FRAME_OPTIONS = "DENY"
     # Honor proxy headers from Vercel/Render so request.is_secure() is correct.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Use the X-Forwarded-Host header set by Vercel's edge proxy. Without this,
+    # Django sees Vercel's internal hostname (not the user-facing domain), so
+    # CSRF host checks compare the wrong value against CSRF_TRUSTED_ORIGINS
+    # and reject every POST.
+    USE_X_FORWARDED_HOST = True

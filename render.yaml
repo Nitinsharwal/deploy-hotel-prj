@@ -1,0 +1,27 @@
+# Render Blueprint — committed config Render reads on deploy.
+# Lets you spin up identical environments (staging, prod) from one file.
+# Web UI settings still override per-service; this is the source of truth.
+services:
+  - type: web
+    name: noma-hotel
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn hotel_prj.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /
+    autoDeploy: true                  # redeploy on every push to `main`
+    envVars:
+      # Render injects DATABASE_URL automatically if you link a managed DB;
+      # otherwise paste the URL via the dashboard.
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: DEBUG
+        value: "False"
+      # All other secrets (SECRET_KEY, GOOGLE_OAUTH_*, EMAIL_*, REDIS_URL,
+      # RAZORPAY_*) come from the dashboard — never commit them here.

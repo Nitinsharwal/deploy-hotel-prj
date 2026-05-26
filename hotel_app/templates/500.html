@@ -1,6 +1,7 @@
-{% load static %}<!DOCTYPE html>
-{# 500 is rendered with template_debug stripped — keep it dependency-free
-   (don't extend base.html, since `base` could be what's broken). #}
+{% load static %}{% comment %}
+  500 is rendered with template_debug stripped — keep it dependency-free
+  (don't extend base.html, since `base` could be what's broken).
+{% endcomment %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
