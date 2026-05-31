@@ -38,7 +38,11 @@ a {
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 20;
+  /* z-index must be ABOVE .nav-backdrop (40) — `position: sticky` + z-index
+     creates a stacking context, which traps the `<ul>` drawer child inside
+     this layer. If .navbar < backdrop, the backdrop paints on top of the
+     drawer and steals every tap. Took us hours to find. */
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1136,11 +1140,14 @@ input[type="search"], input[type="url"], textarea, select {
 }
 .nav-backdrop {
   position: fixed; inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 23, 42, 0.62);
+  /* No backdrop-filter blur — it created a translucent veil that made the
+     drawer text appear "fuzzy" (the drawer renders ABOVE the backdrop but
+     the GPU compositor can still bleed the blur into adjacent layers on
+     some Safari/Brave versions). Solid color dim works on every device. */
   opacity: 0; pointer-events: none;
   transition: opacity .25s ease;
-  z-index: 25;
+  z-index: 40;          /* must be ABOVE bottom-bar (22) so the bar is dimmed too */
 }
 .nav-backdrop.show { opacity: 1; pointer-events: auto; }
 
@@ -1175,18 +1182,28 @@ input[type="search"], input[type="url"], textarea, select {
     align-items: stretch;
     gap: 4px;
     padding: max(20px, var(--safe-top)) 18px var(--safe-bottom);
-    z-index: 30;
+    z-index: 50;                 /* ABOVE the backdrop (40) so taps reach links */
     box-shadow: -20px 0 40px rgba(0,0,0,.35);
+    /* When the drawer is OFF-screen we want it non-interactive so it can't
+       absorb taps from the page beneath. The `.show` rule below restores it. */
+    pointer-events: none;
   }
-  .navbar ul.show { transform: translateX(0); }
+  .navbar ul.show {
+    transform: translateX(0);
+    pointer-events: auto;       /* drawer is on-screen → tappable */
+  }
   .navbar ul li {
     width: 100%;
+    position: relative;          /* own stacking context — each row is its own hit area */
   }
   .navbar ul li a {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 12px; border-radius: 12px;
     min-height: var(--tap-min);
     font-size: 16px;
+    position: relative;          /* lifts the <a> above sibling decorations */
+    z-index: 1;
+    -webkit-tap-highlight-color: rgba(94, 234, 212, 0.25);
   }
   .navbar ul li a:hover,
   .navbar ul li a:focus-visible {
@@ -1194,6 +1211,12 @@ input[type="search"], input[type="url"], textarea, select {
   }
   /* Body scroll lock helper — JS adds this class */
   body.nav-open { overflow: hidden; }
+
+  /* Hide the chatbot bubble while the drawer is open. The widget lives at
+     z-index:9999, which would otherwise float on top of the dimmed backdrop
+     and steal taps in the bottom-right corner. */
+  body.nav-open #hb-chat-toggle,
+  body.nav-open #hb-chat-panel { display: none !important; }
 }
 
 /* ---------- Mobile bottom tab bar ---------- */
