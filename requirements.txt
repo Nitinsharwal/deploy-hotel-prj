@@ -15,3 +15,8 @@ django-allauth[socialaccount]==65.4.1
 redis==5.2.1               # optional — only used when REDIS_URL env var is set
 pytest==8.3.3
 pytest-django==4.9.0
+# ---- Cloud media storage (Cloudinary) ----
+# Optional: only activated when CLOUDINARY_CLOUD_NAME is set (see settings.py).
+# Local dev without it continues using ./media/ on disk.
+django-cloudinary-storage==0.3.0
+cloudinary==1.41.0
