@@ -46,7 +46,13 @@ urlpatterns = [
         TemplateView.as_view(
             template_name="robots.txt",
             content_type="text/plain",
-            extra_context={"site_url": settings.SITE_URL.rstrip("/")},
+            # robots.txt is served by a static TemplateView — no per-request
+            # render — so we can't auto-detect the host. Fall back to the
+            # helper's env-var path (SITE_URL → ALLOWED_HOSTS → localhost).
+            # Cron-equivalent: same logic as email reminders without a request.
+            extra_context={
+                "site_url": __import__("accounts.utils", fromlist=["get_site_url"]).get_site_url()
+            },
         ),
         name="robots",
     ),

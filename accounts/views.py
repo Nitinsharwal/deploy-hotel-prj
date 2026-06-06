@@ -199,7 +199,10 @@ def register_page(request):
         # registration if SMTP hiccups; errors are logged inside _safe_send_mail.
         from .utils import sendCustomerWelcome
 
-        sendCustomerWelcome(user)
+        # Pass `request` so the email's "Find your first stay" link points
+        # at the same hostname the user just registered from. No SITE_URL
+        # env hardcoding needed.
+        sendCustomerWelcome(user, request=request)
         messages.success(request, "An email is sent to your email..!")
         return redirect("/account/register_page")
     return render(request, "register_page.html")
@@ -323,7 +326,9 @@ def vendor_register(request):
         # Branded vendor welcome — same best-effort pattern as customer flow.
         from .utils import sendVendorWelcome
 
-        sendVendorWelcome(vendor_profile)
+        # Pass `request` so the dashboard button in the email opens on
+        # whatever host the vendor signed up from (live URL in prod).
+        sendVendorWelcome(vendor_profile, request=request)
         messages.success(request, "An email is sent to your email..!")
         return redirect("/account/vendor_login")
     return render(request, "vendor/vendor_register.html")

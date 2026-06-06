@@ -510,7 +510,10 @@ def dummy_pay(request, reference):
         # Email the slip — best-effort; failure logs but doesn't block the user.
         from accounts.utils import sendBookingSlip
 
-        sendBookingSlip(booking)
+        # Pass `request` so the email's "view slip" link uses the same
+        # host the customer just booked from (live URL in prod, not the
+        # SITE_URL env default which is set to localhost for dev).
+        sendBookingSlip(booking, request=request)
 
     return redirect("payment_success", reference=booking.reference)
 

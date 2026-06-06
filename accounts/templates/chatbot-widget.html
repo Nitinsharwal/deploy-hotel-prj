@@ -28,13 +28,45 @@
   #hb-chat-header small { display: block; font-weight: 400; opacity: .85; font-size: 12px; }
   #hb-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .9; }
 
-  #hb-chat-meta {
-    padding: 8px 12px; background: #f6f5ff; border-bottom: 1px solid #eee;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  /* Identity strip shown to logged-in users — replaces the email/booking-ref
+     inputs entirely, because the server already knows both values. */
+  #hb-chat-identity {
+    padding: 10px 12px; background: #f6f5ff; border-bottom: 1px solid #eee;
+    display: flex; flex-wrap: wrap; gap: 6px;
   }
-  #hb-chat-meta input {
-    border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; font-size: 12px; width: 100%;
+  .hb-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 5px 10px;
+    background: #fff; border: 1px solid #e5e5ef; border-radius: 999px;
+    color: #1f1d3b;
   }
+  .hb-chip i { color: #5b3df5; }
+  .hb-chip.subtle { background: transparent; border-color: transparent; color: #6b6b80; }
+  .hb-chip code {
+    background: #ecebff; color: #3b1ed0; padding: 1px 6px; border-radius: 4px;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 11px;
+  }
+
+  /* Gate shown to anonymous users instead of the chat surface. */
+  #hb-chat-gate {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 28px 24px; gap: 8px;
+  }
+  .hb-gate-icon { font-size: 36px; }
+  #hb-chat-gate h4 { margin: 4px 0 2px; font-size: 16px; color: #1f1d3b; }
+  #hb-chat-gate p { margin: 0; font-size: 13px; color: #5a5a72; line-height: 1.5; max-width: 280px; }
+  .hb-gate-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 12px; padding: 10px 20px; border-radius: 10px;
+    background: linear-gradient(135deg, #7c5cff, #5b3df5); color: #fff;
+    text-decoration: none; font-weight: 600; font-size: 14px;
+    box-shadow: 0 6px 16px rgba(91, 61, 245, 0.25);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .hb-gate-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(91, 61, 245, 0.32); }
+  .hb-gate-sub { font-size: 12px !important; margin-top: 6px !important; }
+  .hb-gate-sub a { color: #5b3df5; text-decoration: none; font-weight: 600; }
+  .hb-gate-sub a:hover { text-decoration: underline; }
 
   #hb-chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
   .hb-msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.45; }
@@ -58,6 +90,20 @@
   #hb-chat-input button:disabled { opacity: .5; cursor: not-allowed; }
 </style>
 
+{% comment %}
+  Server-side context fed into the JS below.
+
+  Logged-in users get auto-filled email + most-recent booking reference
+  (if any) — no input fields shown. Anonymous visitors see a "log in to
+  chat" gate instead of the chat panel.
+
+  We use json_script (Django 3.1+) instead of inlining the values directly
+  into JS strings — it escapes them safely so a guest with a `</script>`
+  in their email can't XSS the page. The JS reads them with
+  JSON.parse(document.getElementById('hb-ctx').textContent).
+{% endcomment %}
+{{ hb_ctx|json_script:"hb-ctx" }}
+
 <button id="hb-chat-toggle" aria-label="Open chat">💬</button>
 
 <div id="hb-chat-panel" role="dialog" aria-label="Hotel support chat">
@@ -69,17 +115,55 @@
     <button id="hb-close" aria-label="Close">×</button>
   </div>
 
-  <div id="hb-chat-meta">
-    <input id="hb-ref" placeholder="Booking ref (optional)" autocomplete="off">
-    <input id="hb-email" placeholder="Email (optional)" autocomplete="email">
-  </div>
+  {% if request.user.is_authenticated %}
+    {% comment %}
+      Logged-in path — booking ref + email auto-detected, no inputs needed.
+      We still render hidden <input>s so the JS that reads `refField.value`
+      keeps working without a branch.
+    {% endcomment %}
+    <div id="hb-chat-identity">
+      <span class="hb-chip">
+        <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+        Chatting as <strong>{{ request.user.email }}</strong>
+      </span>
+      {% if hb_ctx.booking_ref %}
+        <span class="hb-chip subtle">
+          Latest booking: <code>{{ hb_ctx.booking_ref }}</code>
+        </span>
+      {% endif %}
+    </div>
+    <input id="hb-ref" type="hidden" value="{{ hb_ctx.booking_ref|default:'' }}">
+    <input id="hb-email" type="hidden" value="{{ hb_ctx.email|default:'' }}">
 
-  <div id="hb-chat-messages"></div>
+    <div id="hb-chat-messages"></div>
 
-  <div id="hb-chat-input">
-    <textarea id="hb-question" placeholder="Type your question…" rows="1"></textarea>
-    <button id="hb-send">Send</button>
-  </div>
+    <div id="hb-chat-input">
+      <textarea id="hb-question" placeholder="Type your question…" rows="1"></textarea>
+      <button id="hb-send">Send</button>
+    </div>
+
+  {% else %}
+    {% comment %}
+      Anonymous path — gate behind login so we (a) know who's asking and
+      (b) can auto-attach booking context server-side instead of trusting
+      a free-text email field which is impossible to verify.
+    {% endcomment %}
+    <div id="hb-chat-gate">
+      <div class="hb-gate-icon" aria-hidden="true">🔒</div>
+      <h4>Sign in to chat with support</h4>
+      <p>
+        Once you're signed in, we'll automatically attach your account email
+        and most recent booking — no need to type anything.
+      </p>
+      <a href="{% url 'login_page' %}?next={{ request.path }}" class="hb-gate-btn">
+        <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+        Log in to continue
+      </a>
+      <p class="hb-gate-sub">
+        No account? <a href="{% url 'register_page' %}">Create one</a> — takes 30 seconds.
+      </p>
+    </div>
+  {% endif %}
 </div>
 
 <script>
@@ -96,6 +180,12 @@
   const send = $("hb-send");
   const refField = $("hb-ref");
   const emailField = $("hb-email");
+
+  // Anonymous users see a login gate instead of the chat surface — the
+  // textarea/send button don't exist on the page. Bail before wiring up
+  // event listeners so we don't throw `Cannot read properties of null`
+  // and break the rest of the page's JS.
+  const isAuthed = !!(question && send && messages);
 
   const sessionId = (() => {
     let s = localStorage.getItem("hb_session");
@@ -179,20 +269,31 @@
     }
   }
 
+  // Toggle + close work for everyone (logged-in AND anonymous). The chat
+  // INPUT (textarea/send) is only wired up when authed — anonymous users
+  // see the login gate inside the panel instead.
   toggle.addEventListener("click", () => {
     panel.classList.toggle("open");
-    if (panel.classList.contains("open") && messages.children.length === 0) {
-      addBubble("Hi! How can I help with your booking today?", "bot");
+    if (isAuthed && panel.classList.contains("open") && messages.children.length === 0) {
+      // First-open greeting — personalize with email if we have one,
+      // since the server already passed it in.
+      const greeting = emailField && emailField.value
+        ? `Hi! I see you're signed in as ${emailField.value}. How can I help?`
+        : "Hi! How can I help with your booking today?";
+      addBubble(greeting, "bot");
     }
-    if (panel.classList.contains("open")) question.focus();
+    if (isAuthed && panel.classList.contains("open")) question.focus();
   });
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
-  send.addEventListener("click", () => {
-    const t = question.value.trim();
-    if (t) ask(t);
-  });
-  question.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send.click(); }
-  });
+
+  if (isAuthed) {
+    send.addEventListener("click", () => {
+      const t = question.value.trim();
+      if (t) ask(t);
+    });
+    question.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send.click(); }
+    });
+  }
 })();
 </script>

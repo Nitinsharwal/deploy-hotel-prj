@@ -31,3 +31,17 @@ repos:
       - id: ruff           # lint
         args: [--fix]
       - id: ruff-format    # format (black-compatible)
+
+  # Local hook — block multi-line `{# ... #}` Django comments before they
+  # land in git. Django renders any `{# #}` that doesn't close on the same
+  # line as visible text past the first line, which has caused FIVE
+  # production bugs in this codebase. `{% comment %}...{% endcomment %}`
+  # is the only safe form for anything longer than one line.
+  # Implementation: see scripts/check_django_comments.py
+  - repo: local
+    hooks:
+      - id: no-multiline-django-comments
+        name: Block multi-line {# #} Django comments
+        entry: python scripts/check_django_comments.py
+        language: system
+        files: '\.html$'

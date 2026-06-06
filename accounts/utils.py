@@ -11,23 +11,31 @@ from .models import hotels
 logger = logging.getLogger(__name__)
 
 
-def sendBookingSlip(booking):
-    """Email the booking confirmation + slip to the guest.
+def get_site_url(request=None) -> str:
+    if request is not None:
+        return f"{request.scheme}://{request.get_host()}".rstrip("/")
+    raw = getattr(settings, "SITE_URL", "").rstrip("/")
+    if raw and raw != "http://127.0.0.1:8000":
+        return raw
 
-    Uses a dedicated email template (emails/booking_confirmed.html) rather
-    than the on-screen booking_slip.html — email clients can't render the
-    modern CSS (flexbox, gradients, box-shadow) we use on the web. The
-    email template is table-based with inline styles, tested in Gmail,
-    Apple Mail and Outlook.
-    """
+    for host in getattr(settings, "ALLOWED_HOSTS", []):
+        host = host.strip()
+        if host and not host.startswith(".") and host not in {"localhost", "127.0.0.1", "*"}:
+            return f"https://{host}"
+
+    return "http://127.0.0.1:8000"
+
+
+def sendBookingSlip(booking, request=None):
+    """Pass ``request`` from views so email links use the live domain
+    (localhost/ngrok/render) instead of the stale SITE_URL env var."""
     from django.template.loader import render_to_string
 
-    site_url = getattr(settings, "SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+    site_url = get_site_url(request)
     ctx = {"booking": booking, "site_url": site_url}
 
     html_body = render_to_string("emails/booking_confirmed.html", ctx)
 
-    # Plain-text fallback for clients that prefer it (and for accessibility).
     p = booking.payments.last()
     text_body = "\n".join(
         [
@@ -74,12 +82,17 @@ def sendBookingSlip(booking):
     return _safe_send_mail(subject, text_body, booking.guest_email, html_body)
 
 
-def sendCustomerWelcome(user):
-    """Welcome a new customer right after they finish registration."""
-    from django.conf import settings as _s
+def sendCustomerWelcome(user, request=None):
+    """Welcome a new customer right after they finish registration.
+
+    Pass ``request`` from the registration view so the welcome email's
+    "Find your first stay" link points at the same host the user just
+    signed up from. Falls back to SITE_URL env / ALLOWED_HOSTS guess
+    when there's no request available.
+    """
     from django.template.loader import render_to_string
 
-    site_url = getattr(_s, "SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+    site_url = get_site_url(request)
     ctx = {
         "user": user,
         "first_name": user.first_name or user.email.split("@")[0],
@@ -102,12 +115,16 @@ def sendCustomerWelcome(user):
     return _safe_send_mail(subject, text_body, user.email, html_body)
 
 
-def sendVendorWelcome(vendor):
-    """Welcome a new vendor and point them at their dashboard."""
-    from django.conf import settings as _s
+def sendVendorWelcome(vendor, request=None):
+    """Welcome a new vendor and point them at their dashboard.
+
+    Pass ``request`` from the vendor-signup view so the "open dashboard"
+    button in the email opens the right host (live URL in prod, not
+    localhost) without needing SITE_URL set anywhere.
+    """
     from django.template.loader import render_to_string
 
-    site_url = getattr(_s, "SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+    site_url = get_site_url(request)
     ctx = {
         "vendor": vendor,
         "first_name": vendor.user.first_name or "there",
@@ -132,11 +149,18 @@ def sendVendorWelcome(vendor):
 
 
 def sendChargeReminder(charge):
-    """Email a vendor that a platform charge is due (or overdue)."""
-    from django.conf import settings as _s
+    """Email a vendor that a platform charge is due (or overdue).
+
+    No ``request`` arg here — this is called from the
+    ``send_charge_reminders`` management command (cron), where there is
+    no HTTP request to derive a host from. get_site_url() falls back to
+    SITE_URL env / ALLOWED_HOSTS, so make sure SITE_URL is set in your
+    production env (Render/Vercel dashboard) for these reminder mails to
+    link to the live site.
+    """
     from django.template.loader import render_to_string
 
-    site_url = getattr(_s, "SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+    site_url = get_site_url()
     vendor = charge.vendor
     recipient = vendor.user.email
     ctx = {"charge": charge, "vendor": vendor, "site_url": site_url}

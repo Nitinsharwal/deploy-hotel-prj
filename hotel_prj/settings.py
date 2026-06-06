@@ -92,6 +92,10 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Injects `hb_ctx` (chatbot auto-fill) into every template
+                # render. Cheap: returns immediately for anonymous users;
+                # one indexed SELECT for logged-in users.
+                "accounts.context_processors.chatbot_context",
             ],
         },
     },
