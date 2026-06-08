@@ -26,7 +26,17 @@
     padding: 14px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;
   }
   #hb-chat-header small { display: block; font-weight: 400; opacity: .85; font-size: 12px; }
-  #hb-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; opacity: .9; }
+  /* Right-side cluster: clear-history (authed only) + close. Tighter
+     than just two raw <button>s so they don't look like floating glyphs. */
+  .hb-header-actions { display: flex; align-items: center; gap: 4px; }
+  #hb-close, #hb-clear {
+    background: none; border: none; color: #fff; cursor: pointer; opacity: .85;
+    padding: 6px 8px; border-radius: 8px; transition: background .15s ease, opacity .15s ease;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  #hb-clear { font-size: 14px; }
+  #hb-close { font-size: 20px; line-height: 1; }
+  #hb-close:hover, #hb-clear:hover { background: rgba(255,255,255,0.15); opacity: 1; }
 
   /* Identity strip shown to logged-in users — replaces the email/booking-ref
      inputs entirely, because the server already knows both values. */
@@ -112,7 +122,18 @@
       Hotel Support
       <small>Ask about bookings, policies, payments</small>
     </div>
-    <button id="hb-close" aria-label="Close">×</button>
+    <div class="hb-header-actions">
+      {% if request.user.is_authenticated %}
+        {% comment %}
+          "Clear history" only makes sense for logged-in users — anon
+          users have nothing persisted yet (they're behind the gate).
+        {% endcomment %}
+        <button id="hb-clear" aria-label="Clear chat history" title="Clear chat history">
+          <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+        </button>
+      {% endif %}
+      <button id="hb-close" aria-label="Close">×</button>
+    </div>
   </div>
 
   {% if request.user.is_authenticated %}
@@ -147,7 +168,30 @@
       Anonymous path — gate behind login so we (a) know who's asking and
       (b) can auto-attach booking context server-side instead of trusting
       a free-text email field which is impossible to verify.
+
+      Also: this branch fires on the first page load after the user
+      hits logout. We use that opportunity to nuke any persisted chat
+      history from localStorage. Without this, a different user logging
+      in on the same browser later could see the previous account's
+      conversation (since localStorage is per-origin, not per-account).
     {% endcomment %}
+    <script>
+      (function () {
+        // Walk every localStorage key and delete the chat-history ones.
+        // Keep `hb_session` since it's just an opaque conversation ID
+        // and contains no message content.
+        try {
+          const toRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("hb_history:")) toRemove.push(k);
+          }
+          toRemove.forEach((k) => localStorage.removeItem(k));
+        } catch (_) {
+          // Private mode / quota errors — non-fatal, just skip the wipe.
+        }
+      })();
+    </script>
     <div id="hb-chat-gate">
       <div class="hb-gate-icon" aria-hidden="true">🔒</div>
       <h4>Sign in to chat with support</h4>
@@ -196,7 +240,52 @@
     return s;
   })();
 
-  function addBubble(text, who, sources = [], handoff = false) {
+  // ---- Chat history persistence ---------------------------------------
+  // GOAL: When the user closes and reopens the panel, they see the prior
+  //       conversation instead of starting fresh. History clears only on
+  //       logout (handled in the anonymous-gate branch below).
+  //
+  // WHERE: localStorage, keyed by user email. Keying on email — rather
+  //       than the session UUID — means logging in as a different user
+  //       on the same browser shows that user's own history, not the
+  //       previous one's. Privacy by accident.
+  //
+  // WHAT we persist: just the structured payload of each bubble (text,
+  //       who, sources, handoff). Re-render via addBubble on restore.
+  //       Storing DOM nodes would tie us to current markup.
+  //
+  // CAP: last 100 messages. localStorage is per-origin and ~5MB; 100
+  //       chatty exchanges is < 30KB. Drops oldest when over.
+  const HISTORY_KEY = "hb_history:" + (emailField && emailField.value ? emailField.value : "anon");
+  const HISTORY_MAX = 100;
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (_) {
+      // Corrupt / quota error → start fresh, don't break the widget.
+      return [];
+    }
+  }
+  function saveHistory(list) {
+    try {
+      // Trim from the FRONT so the most recent messages survive.
+      const trimmed = list.slice(-HISTORY_MAX);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    } catch (_) {
+      // Quota exceeded — silently drop. Live conversation continues.
+    }
+  }
+  function appendHistory(entry) {
+    const list = loadHistory();
+    list.push(entry);
+    saveHistory(list);
+  }
+
+  function addBubble(text, who, sources = [], handoff = false, opts = {}) {
+    // opts.persist=false skips localStorage write — used when REPLAYING
+    // saved history on panel open (otherwise we'd double-record).
     const div = document.createElement("div");
     div.className = "hb-msg " + who + (handoff ? " handoff" : "");
     div.textContent = text;
@@ -215,6 +304,19 @@
     }
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+
+    if (opts.persist !== false) {
+      appendHistory({ text, who, sources, handoff });
+    }
+  }
+
+  function restoreHistory() {
+    // Replay every saved bubble WITHOUT writing back. Returns true if
+    // anything was restored, so the open-handler can skip the greeting.
+    const list = loadHistory();
+    if (!list.length) return false;
+    list.forEach((m) => addBubble(m.text, m.who, m.sources || [], !!m.handoff, { persist: false }));
+    return true;
   }
 
   function escapeHtml(s) {
@@ -269,14 +371,25 @@
     }
   }
 
+  // Restore the saved conversation IMMEDIATELY at script load, not on
+  // first-open. Why: when the user clicks the toggle the first time
+  // this page session, they expect to see what they had before. Doing
+  // it now (vs in the click handler) avoids a flash of "empty chat
+  // → bubbles appear" on every open.
+  let didRestore = false;
+  if (isAuthed) {
+    didRestore = restoreHistory();
+  }
+
   // Toggle + close work for everyone (logged-in AND anonymous). The chat
   // INPUT (textarea/send) is only wired up when authed — anonymous users
   // see the login gate inside the panel instead.
   toggle.addEventListener("click", () => {
     panel.classList.toggle("open");
+    // Show greeting only on the VERY first open in a clean state — never
+    // when we've already restored history (would double-greet) and never
+    // mid-conversation (would mid-clutter).
     if (isAuthed && panel.classList.contains("open") && messages.children.length === 0) {
-      // First-open greeting — personalize with email if we have one,
-      // since the server already passed it in.
       const greeting = emailField && emailField.value
         ? `Hi! I see you're signed in as ${emailField.value}. How can I help?`
         : "Hi! How can I help with your booking today?";
@@ -294,6 +407,24 @@
     question.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send.click(); }
     });
+
+    // Wire the "clear history" trash icon (rendered next to the close
+    // button in the header on the authed branch). Confirms before
+    // wiping — accidental clicks should not destroy a debugging session
+    // the user was halfway through.
+    const clearBtn = $("hb-clear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        if (!confirm("Clear this chat history? This can't be undone.")) return;
+        try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
+        messages.innerHTML = "";
+        // Show greeting again so the panel doesn't look broken.
+        const greeting = emailField && emailField.value
+          ? `Cleared. Hi ${emailField.value}, how can I help?`
+          : "Cleared. How can I help with your booking?";
+        addBubble(greeting, "bot");
+      });
+    }
   }
 })();
 </script>
