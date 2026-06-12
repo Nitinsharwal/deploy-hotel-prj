@@ -39,6 +39,7 @@ sitemaps = {
 
 urlpatterns = [
     path("healthz", healthz, name="healthz"),
+    path("healtz", healthz),
     path("admin/", admin.site.urls),
     # Branded super-admin UI. Returns 404 to non-superusers — the URL itself
     # is invisible to anyone snooping. Implemented in accounts/super_admin.py.
