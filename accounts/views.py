@@ -15,14 +15,18 @@ from django.utils import timezone
 
 from .forms import (
     CustomerRegisterForm,
+    ForgotPasswordForm,
     HotelForm,
     LoginForm,
+    OtpResetForm,
     ProfileForm,
+    ResetPasswordForm,
     RoomForm,
     VendorRegisterForm,
 )
 from .models import (
     Booking,
+    PasswordResetToken,
     Room,
     amenities,
     hotel_images,
@@ -30,7 +34,7 @@ from .models import (
     hotel_vendor,
     hotels,
 )
-from .utils import generateSlug, random_token, sendEmail, sendOtp
+from .utils import generateSlug, random_token, sendEmail, sendForgotPasswordEmail, sendOtp
 
 
 def logout_user(request):
@@ -696,3 +700,120 @@ def pay_charge(request, charge_id):
     sendChargePaidConfirmation(charge)
 
     return redirect("ven_dashboard")
+
+
+def _client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+def forgot_password(request):
+    if request.method == "POST":
+        form = ForgotPasswordForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, "Please enter a valid email address.")
+            return render(request, "forgot_password.html", {"form": form})
+
+        email = form.cleaned_data["email"]
+        user = User.objects.filter(email__iexact=email).first()
+
+        if user:
+            otp = f"{random.randint(0, 999999):06d}"
+            token = random_token().replace("-", "")
+            PasswordResetToken.objects.create(
+                user=user,
+                otp_hash=make_password(otp),
+                token=token,
+                expires_at=timezone.now() + timedelta(minutes=30),
+                ip_address=_client_ip(request),
+            )
+            sendForgotPasswordEmail(user, otp, token, request=request)
+            request.session["pw_reset_email"] = email
+
+        messages.success(
+            request,
+            "If an account exists for that email, we've sent a reset code and link. "
+            "Check your inbox (and spam folder).",
+        )
+        return redirect("forgot_password_otp")
+
+    return render(request, "forgot_password.html", {"form": ForgotPasswordForm()})
+
+
+def forgot_password_otp(request):
+    initial_email = request.session.get("pw_reset_email", "")
+
+    if request.method == "POST":
+        form = OtpResetForm(request.POST)
+        if not form.is_valid():
+            return render(request, "forgot_password_otp.html", {"form": form})
+
+        email = form.cleaned_data["email"]
+        otp = form.cleaned_data["otp"]
+        new_password = form.cleaned_data["new_password"]
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            messages.error(request, "Invalid email or code.")
+            return render(request, "forgot_password_otp.html", {"form": form})
+
+        token_obj = (
+            PasswordResetToken.objects
+            .filter(user=user, used_at__isnull=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if not token_obj or not token_obj.is_valid():
+            messages.error(request, "Your code has expired. Please request a new one.")
+            return redirect("forgot_password")
+
+        if not check_password(otp, token_obj.otp_hash):
+            messages.error(request, "Invalid code. Please try again.")
+            return render(request, "forgot_password_otp.html", {"form": form})
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        token_obj.mark_used()
+        request.session.pop("pw_reset_email", None)
+
+        messages.success(request, "Password updated. You can now sign in with your new password.")
+        return redirect(_login_redirect_for(user))
+
+    form = OtpResetForm(initial={"email": initial_email})
+    return render(request, "forgot_password_otp.html", {"form": form})
+
+
+def forgot_password_reset(request, token):
+    token_obj = PasswordResetToken.objects.filter(token=token).first()
+
+    if not token_obj or not token_obj.is_valid():
+        messages.error(request, "This reset link has expired or already been used. Please request a new one.")
+        return redirect("forgot_password")
+
+    if request.method == "POST":
+        form = ResetPasswordForm(request.POST)
+        if not form.is_valid():
+            return render(request, "forgot_password_reset.html", {"form": form, "email": token_obj.user.email})
+
+        user = token_obj.user
+        user.set_password(form.cleaned_data["new_password"])
+        user.save(update_fields=["password"])
+        token_obj.mark_used()
+        request.session.pop("pw_reset_email", None)
+
+        messages.success(request, "Password updated. You can now sign in with your new password.")
+        return redirect(_login_redirect_for(user))
+
+    return render(
+        request,
+        "forgot_password_reset.html",
+        {"form": ResetPasswordForm(), "email": token_obj.user.email},
+    )
+
+
+def _login_redirect_for(user):
+    if hotel_vendor.objects.filter(user=user).exists():
+        return "vendor_login"
+    return "login_page"

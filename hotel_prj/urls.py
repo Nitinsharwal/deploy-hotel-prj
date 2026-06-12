@@ -19,9 +19,16 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
+from django.http import HttpResponse
 from django.urls import include, path, re_path
+from django.views.decorators.cache import never_cache
 from django.views.generic import TemplateView
 from django.views.static import serve
+
+
+@never_cache
+def healthz(_request):
+    return HttpResponse("ok", content_type="text/plain")
 
 from hotel_app.sitemaps import HotelSitemap, StaticViewSitemap
 
@@ -31,9 +38,7 @@ sitemaps = {
 }
 
 urlpatterns = [
-    # Django's built-in admin — gated by is_staff. Not linked from anywhere in
-    # the public UI. Keep it for the data-level fallback (running migrations
-    # diffs, raw object editing). Use /super-admin/ for everyday work.
+    path("healthz", healthz, name="healthz"),
     path("admin/", admin.site.urls),
     # Branded super-admin UI. Returns 404 to non-superusers — the URL itself
     # is invisible to anyone snooping. Implemented in accounts/super_admin.py.
@@ -70,6 +75,13 @@ urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 urlpatterns += [
     re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
 ]
+
+if settings.DEBUG:
+    try:
+        import debug_toolbar
+        urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+    except ImportError:
+        pass
 
 # Branded error pages. Django uses these handlers when DEBUG=False.
 # They live in hotel_app/templates/ and inherit base.html (except 500.html,

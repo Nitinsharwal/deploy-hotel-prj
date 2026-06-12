@@ -148,3 +148,78 @@ class RoomForm(forms.ModelForm):
         if n < 1:
             raise forms.ValidationError("Capacity must be at least 1.")
         return n
+
+
+class ForgotPasswordForm(forms.Form):
+    email = forms.EmailField(
+        max_length=191,
+        widget=forms.EmailInput(attrs={
+            "placeholder": "you@example.com",
+            "autocomplete": "email",
+            "autofocus": True,
+        }),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
+class ResetPasswordForm(forms.Form):
+    new_password = forms.CharField(
+        min_length=8,
+        max_length=128,
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "At least 8 characters",
+            "autocomplete": "new-password",
+        }),
+    )
+    confirm_password = forms.CharField(
+        min_length=8,
+        max_length=128,
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "Repeat new password",
+            "autocomplete": "new-password",
+        }),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        pw = cleaned.get("new_password")
+        confirm = cleaned.get("confirm_password")
+        if pw and confirm and pw != confirm:
+            self.add_error("confirm_password", "Passwords do not match.")
+        if pw:
+            try:
+                validate_password(pw)
+            except forms.ValidationError as e:
+                self.add_error("new_password", e)
+        return cleaned
+
+
+class OtpResetForm(ResetPasswordForm):
+    email = forms.EmailField(
+        max_length=191,
+        widget=forms.EmailInput(attrs={
+            "placeholder": "you@example.com",
+            "autocomplete": "email",
+        }),
+    )
+    otp = forms.CharField(
+        min_length=6,
+        max_length=6,
+        widget=forms.TextInput(attrs={
+            "placeholder": "6-digit code",
+            "inputmode": "numeric",
+            "pattern": "[0-9]*",
+            "autocomplete": "one-time-code",
+        }),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+    def clean_otp(self):
+        code = self.cleaned_data["otp"].strip()
+        if not code.isdigit():
+            raise forms.ValidationError("OTP must be 6 digits.")
+        return code

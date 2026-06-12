@@ -5,11 +5,6 @@ from django.db import models
 class hotel_owner(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="owner_profile")
     profile_pic = models.ImageField(upload_to="profile", null=True, blank=True)
-    # null=True on CharFields here is intentional & already in the schema:
-    # phone_number needs distinct-NULL semantics (multiple Google signups
-    # without phones), email_token and otp are unset before/after use.
-    # Django's "use empty string" guidance would force migrations now without
-    # any benefit — keep null=True and suppress DJ001 explicitly.
     phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)  # noqa: DJ001
     email_token = models.CharField(max_length=100, null=True, blank=True)  # noqa: DJ001
     otp = models.CharField(max_length=128, null=True, blank=True)  # noqa: DJ001  stores hashed OTP
@@ -60,9 +55,6 @@ class hotels(models.Model):
     hotel_offer_price = models.FloatField()
     hotel_location = models.TextField()
     is_active = models.BooleanField(default=True, db_index=True)
-
-    # Denormalized rating cache — updated by Review.save()/delete() signals.
-    # Why: avoid an AVG() aggregation on every listing page render.
     rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     rating_count = models.PositiveIntegerField(default=0)
 
@@ -96,22 +88,7 @@ class hotel_manager(models.Model):
     def __str__(self):
         return f"{self.manager_name} ({self.hotel.hotel_name})"
 
-
-# Legacy `customers` model removed in migration 0009. Data was migrated to
-# `Booking` via the data migration 0004_backfill_rooms_and_bookings.
-
-
-# ---------- Phase 2: room inventory, booking lifecycle, payments ----------
-
-
 class Room(models.Model):
-    """A bookable room *type* within a hotel.
-
-    `total_count` is the inventory count for this room type. Availability is
-    computed at query time by counting non-cancelled overlapping bookings; we
-    do not maintain a per-day inventory table at this scale.
-    """
-
     class RoomType(models.TextChoices):
         STANDARD = "standard", "Standard"
         DELUXE = "deluxe", "Deluxe"
@@ -498,3 +475,31 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name or ''} — {self.subject or '(no subject)'}"
+
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    otp_hash = models.CharField(max_length=128)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "used_at"])]
+
+    def __str__(self):
+        return f"Reset for {self.user.email} (expires {self.expires_at:%Y-%m-%d %H:%M})"
+
+    def is_valid(self):
+        from django.utils import timezone
+
+        return self.used_at is None and self.expires_at > timezone.now()
+
+    def mark_used(self):
+        from django.utils import timezone
+
+        self.used_at = timezone.now()
+        self.save(update_fields=["used_at"])

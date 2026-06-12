@@ -51,7 +51,13 @@ INSTALLED_APPS = [
     "accounts",
 ]
 
-# allauth needs this. Single-site setup ⇒ id=1; allauth's migration seeds it.
+if DEBUG:
+    try:
+        import debug_toolbar  # noqa: F401
+        INSTALLED_APPS.append("debug_toolbar")
+    except ImportError:
+        pass
+
 SITE_ID = 1
 
 MIDDLEWARE = [
@@ -67,6 +73,10 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "axes.middleware.AxesMiddleware",
 ]
+
+if DEBUG and "debug_toolbar" in INSTALLED_APPS:
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    INTERNAL_IPS = ["127.0.0.1"]
 
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",

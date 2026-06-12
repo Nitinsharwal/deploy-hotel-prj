@@ -337,6 +337,38 @@ def sendContactAck(msg):
     return _safe_send_mail(subject, text_body, msg.email, html_body)
 
 
+def sendForgotPasswordEmail(user, otp, token, request=None):
+    from django.template.loader import render_to_string
+
+    site_url = get_site_url(request)
+    reset_link = f"{site_url}/account/forgot/reset/{token}/"
+    ctx = {
+        "user": user,
+        "first_name": user.first_name or user.email.split("@")[0],
+        "otp": otp,
+        "reset_link": reset_link,
+        "site_url": site_url,
+    }
+    html_body = render_to_string("emails/forgot_password.html", ctx)
+    text_body = "\n".join([
+        f"Hi {ctx['first_name']},",
+        "",
+        "We received a request to reset your Noma password.",
+        "",
+        f"Your one-time code: {otp}",
+        "(expires in 30 minutes)",
+        "",
+        "Or click this link to reset directly:",
+        f"  {reset_link}",
+        "",
+        "If you didn't request this, you can ignore this email — your password won't change.",
+        "",
+        "— Noma Hotel · nomapvtltd@gmail.com",
+    ])
+    subject = f"Reset your Noma password — code {otp}"
+    return _safe_send_mail(subject, text_body, user.email, html_body)
+
+
 def _safe_send_mail(subject, text_body, recipient, html_body):
     """Send mail with errors logged. Returns True on success, False otherwise.
 
