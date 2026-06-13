@@ -370,24 +370,37 @@ def sendForgotPasswordEmail(user, otp, token, request=None):
 
 
 def _safe_send_mail(subject, text_body, recipient, html_body):
-    """Send mail with errors logged. Returns True on success, False otherwise.
+    """Fire-and-forget email send. Returns immediately (True) — the SMTP
+    work happens on a daemon thread so the HTTP request can return.
 
-    Why: registration/booking should not 500 if SMTP is down, but silent
-    failures hid real configuration bugs in the past.
+    Why this changed: synchronous send_mail() blocks the gunicorn worker
+    on socket.connect() — if Gmail is slow or Render's network hiccups,
+    the worker hits its 30s timeout and gets SIGKILL'd, returning a 500
+    to the user. With a background thread the worker returns in <50ms;
+    the email arrives a few seconds later (or doesn't, in which case
+    we log it and move on — same as before).
+
+    The thread is `daemon=True` so it dies cleanly when gunicorn restarts
+    the worker. A few in-flight emails could be lost on deploy/scale —
+    acceptable trade-off for non-critical mail (welcome, OTP, slip).
+    Critical mail (payment receipts) should move to a real queue later.
     """
-    try:
-        send_mail(
-            subject,
-            text_body,
-            settings.EMAIL_HOST_USER,
-            [recipient],
-            fail_silently=False,
-            html_message=html_body,
-        )
-        return True
-    except Exception:
-        logger.exception("Email send failed (subject=%s, to=%s)", subject, recipient)
-        return False
+    def _send():
+        try:
+            send_mail(
+                subject,
+                text_body,
+                settings.EMAIL_HOST_USER,
+                [recipient],
+                fail_silently=False,
+                html_message=html_body,
+            )
+        except Exception:
+            logger.exception("Email send failed (subject=%s, to=%s)", subject, recipient)
+
+    import threading
+    threading.Thread(target=_send, daemon=True).start()
+    return True
 
 
 def random_token():

@@ -303,6 +303,7 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = host_user
 EMAIL_HOST_PASSWORD = host_pass
+EMAIL_TIMEOUT = 10
 
 _redis_url = os.getenv("REDIS_URL", "")
 if _redis_url:
