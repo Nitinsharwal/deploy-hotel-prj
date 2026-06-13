@@ -212,7 +212,7 @@
 
 <script>
 (function () {
-  const API_URL = "https://hotelchatapi.onrender.com/api/chat";
+  const API_URL = "https://hotel-chatbot-api-faoe.onrender.com/api/chat";
   const API_KEY = "6b74f5288ee8707b517d6e6f8448883e61d58f4c54f6badd7f009a3acef349eaff8995613ddb6f11eebc91fde20a5a80";
 
   const $ = (id) => document.getElementById(id);
@@ -357,14 +357,20 @@
       });
       setTyping(false);
       if (!r.ok) {
-        addBubble("Sorry, I couldn't reach support right now. (" + r.status + ")", "bot", [], true);
+        const msg = r.status === 401
+          ? "Authorization failed (API key changed?). Please tell the admin."
+          : r.status === 502 || r.status === 503 || r.status === 504
+          ? "Support service is starting up — please wait ~30s and try again."
+          : "Sorry, I couldn't reach support right now. (HTTP " + r.status + ")";
+        addBubble(msg, "bot", [], true);
         return;
       }
       const data = await r.json();
       addBubble(data.answer, "bot", data.sources || [], !!data.handoff);
     } catch (e) {
       setTyping(false);
-      addBubble("Network error. Please try again.", "bot", [], true);
+      const detail = (e && e.message) ? " (" + e.message + ")" : "";
+      addBubble("Network error — check your connection or wait for the support service to wake." + detail, "bot", [], true);
     } finally {
       send.disabled = false;
       question.focus();
