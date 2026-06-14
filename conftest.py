@@ -8,9 +8,6 @@ os.environ["AXES_ENABLED"] = "False"
 
 
 def pytest_configure(config):
-    # By now Django settings have loaded (settings.py calls load_dotenv() which
-    # re-populates DATABASE_URL from .env). Override DATABASES so tests use a
-    # disposable on-disk SQLite file. Disable django-axes for the same reason.
     from django.conf import settings
 
     settings.AXES_ENABLED = False
@@ -20,3 +17,12 @@ def pytest_configure(config):
             "NAME": ":memory:",
         }
     }
+
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _seed_plans(db):
+    from django.core.management import call_command
+    call_command("seed_plans", verbosity=0)

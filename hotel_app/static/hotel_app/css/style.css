@@ -1830,3 +1830,88 @@ html, body { overflow-x: hidden; }
      Just bump the shadow a hair so they don't get lost on a dark page. */
   .toast-stack .alert { box-shadow: 0 20px 50px rgba(0,0,0,.4); }
 }
+
+/* ============================================================
+   POLISH BUNDLE — HTMX + skeletons + view transitions
+   ============================================================ */
+
+/* View transitions: smooth cross-fade between full page nav. */
+@supports (view-transition-name: root) {
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation-duration: .25s;
+    animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+  }
+  ::view-transition-old(root) { animation-name: fadeOut; }
+  ::view-transition-new(root) { animation-name: fadeIn; }
+}
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(4px); } }
+
+/* HTMX request indicators. Anywhere we mark something `hx-indicator`,
+   it'll be shown only while the request is in flight. */
+.htmx-indicator { opacity: 0; transition: opacity .15s ease; }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { opacity: 1; }
+.htmx-request .htmx-target-fade { opacity: .5; transition: opacity .2s ease; }
+
+/* Global top-of-page progress bar. Sits below the navbar, sweeps right. */
+.hx-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #0f766e, transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  background-position: -50% 0;
+  z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s ease;
+}
+body.htmx-request .hx-progress { opacity: 1; animation: hxSweep 1.2s ease-in-out infinite; }
+@keyframes hxSweep {
+  0%   { background-position: -50% 0; }
+  100% { background-position: 150% 0; }
+}
+
+/* Skeleton loader cards. Use as <div class="skeleton hotel-card">. */
+.skeleton {
+  position: relative; overflow: hidden;
+  background: #f1f5f9; border-radius: 14px;
+}
+.skeleton::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.55) 50%, transparent 100%);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.skel-bar { height: 12px; border-radius: 6px; background: #e2e8f0; margin: 6px 0; }
+.skel-bar.short { width: 40%; }
+.skel-bar.med   { width: 65%; }
+.skel-bar.long  { width: 85%; }
+.skel-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 0; overflow: hidden;
+}
+.skel-card .skel-media { aspect-ratio: 16 / 10; background: #f1f5f9; position: relative; overflow: hidden; }
+.skel-card .skel-media::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.6) 50%, transparent 100%);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.skel-card .skel-body { padding: 16px; }
+
+/* Spinner-in-button: drop `<span class="btn-spinner"></span>` inside any
+   button + add class `btn-busy` while loading. Auto-shows via HTMX. */
+.btn-spinner {
+  display: none;
+  width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; margin-right: 6px; vertical-align: -2px;
+  animation: spin .8s linear infinite;
+}
+.htmx-request .btn-spinner,
+.htmx-request.btn-spinner,
+.btn-busy .btn-spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+

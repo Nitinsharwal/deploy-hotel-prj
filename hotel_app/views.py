@@ -214,6 +214,8 @@ def home(request):
             "amenity_ids": amenity_ids,
         },
     }
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "_hotel_grid.html", context)
     return render(request, "index.html", context)
 
 
@@ -249,7 +251,7 @@ def hotel_details(request, slug):
                 f"Booking {booking.reference} created. Complete payment to confirm.",
             )
             sendCustomer(booking.guest_email, booking.room.hotel, booking.total_amount)
-            return redirect("hotel_details", slug=slug)
+            return redirect("payment_checkout", reference=booking.reference)
 
         for error in form.non_field_errors():
             messages.error(request, error)
@@ -374,6 +376,19 @@ def user_logout(request):
 
 def about(request):
     return render(request, "about.html")
+
+
+def pricing(request):
+    from accounts.models import Plan, hotel_vendor
+    plans = Plan.objects.filter(is_active=True).order_by("sort_order", "price_monthly_inr")
+    vendor = None
+    if request.user.is_authenticated:
+        vendor = hotel_vendor.objects.filter(user=request.user).first()
+    return render(request, "pricing.html", {
+        "plans": plans,
+        "is_vendor": vendor is not None,
+        "current_plan": vendor.current_plan if vendor else None,
+    })
 
 
 def contact(request):

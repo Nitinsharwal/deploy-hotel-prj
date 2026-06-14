@@ -12,6 +12,7 @@ from django.db.models import Q as models_Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from .forms import (
     CustomerRegisterForm,
@@ -198,7 +199,7 @@ def register_page(request):
             phone_number=data["phone_number"],
             email_token=random_token(),
         )
-        sendEmail(data["email"], owner_profile.email_token)
+        sendEmail(data["email"], owner_profile.email_token, request=request)
         # Second, branded "Welcome to Noma" email. Best-effort — never blocks
         # registration if SMTP hiccups; errors are logged inside _safe_send_mail.
         from .utils import sendCustomerWelcome
@@ -326,7 +327,7 @@ def vendor_register(request):
             profile_pic=data.get("profile_image"),
             email_token=random_token(),
         )
-        sendEmail(data["email"], vendor_profile.email_token)
+        sendEmail(data["email"], vendor_profile.email_token, request=request)
         # Branded vendor welcome — same best-effort pattern as customer flow.
         from .utils import sendVendorWelcome
 
@@ -382,11 +383,114 @@ def ven_dashboard(request):
 
 
 @login_required(login_url="vendor_login")
+def manage_plan(request):
+    from .models import Plan
+    vendor = hotel_vendor.objects.filter(user=request.user).first()
+    if not vendor:
+        messages.error(request, "You are not registered as a hotel vendor.")
+        return redirect("vendor_register")
+
+    current = vendor.current_plan
+    sub = vendor.current_subscription
+    plans = Plan.objects.filter(is_active=True).order_by("sort_order", "price_monthly_inr")
+
+    usage = {
+        "hotels_used": vendor.hotels.count(),
+        "hotels_max": current.max_hotels if current and current.max_hotels else None,
+    }
+    if usage["hotels_max"]:
+        usage["hotels_pct"] = min(100, int(usage["hotels_used"] * 100 / usage["hotels_max"]))
+    else:
+        usage["hotels_pct"] = 0
+
+    return render(request, "vendor/manage_plan.html", {
+        "vendor": vendor,
+        "current": current,
+        "subscription": sub,
+        "plans": plans,
+        "usage": usage,
+    })
+
+
+@login_required(login_url="vendor_login")
+@require_POST
+def change_plan(request, slug):
+    from .models import Plan, VendorCharge, VendorSubscription
+    from datetime import timedelta
+    from django.utils import timezone
+
+    vendor = hotel_vendor.objects.filter(user=request.user).first()
+    if not vendor:
+        messages.error(request, "You are not registered as a hotel vendor.")
+        return redirect("vendor_register")
+
+    new_plan = get_object_or_404(Plan, slug=slug, is_active=True)
+    current = vendor.current_plan
+    if current and current.slug == new_plan.slug:
+        messages.info(request, f"You're already on {new_plan.name}.")
+        return redirect("manage_plan")
+
+    today = timezone.localdate()
+    existing_active = vendor.subscriptions.filter(status=VendorSubscription.Status.ACTIVE)
+
+    is_downgrade = current and float(new_plan.price_monthly_inr) < float(current.price_monthly_inr)
+
+    if is_downgrade:
+        existing_active.update(
+            status=VendorSubscription.Status.CANCELLED,
+            cancelled_at=timezone.now(),
+            cancel_reason=f"Vendor scheduled downgrade to {new_plan.name}",
+        )
+        messages.success(
+            request,
+            f"Your plan will switch to {new_plan.name} at the end of the current cycle. "
+            "You'll keep paid features until then.",
+        )
+        return redirect("manage_plan")
+
+    existing_active.update(status=VendorSubscription.Status.EXPIRED)
+    VendorSubscription.objects.create(
+        vendor=vendor,
+        plan=new_plan,
+        status=VendorSubscription.Status.ACTIVE,
+        period_start=today,
+        period_end=today + timedelta(days=30),
+    )
+
+    if new_plan.price_monthly_inr > 0:
+        charge = VendorCharge.objects.create(
+            vendor=vendor,
+            kind=VendorCharge.Kind.SUBSCRIPTION,
+            amount=new_plan.price_monthly_inr,
+            description=f"{new_plan.name} plan — monthly subscription",
+            due_date=today + timedelta(days=7),
+            grace_days=14,
+            status=VendorCharge.Status.PENDING,
+        )
+        from .utils import sendPlanInvoiceEmail
+        sendPlanInvoiceEmail(vendor, charge, new_plan, request=request)
+        return redirect("pay_charge", charge_id=charge.id)
+
+    messages.success(request, f"Switched to {new_plan.name}.")
+    return redirect("manage_plan")
+
+
+@login_required(login_url="vendor_login")
 def add_hotel(request):
     vendor = hotel_vendor.objects.filter(user=request.user).first()
     if not vendor:
         messages.error(request, "You are not registered as a hotel vendor.")
         return redirect("vendor_register")
+
+    current_hotels = vendor.hotels.count()
+    if not vendor.has_room_for("max_hotels", current_hotels):
+        plan = vendor.current_plan
+        messages.warning(
+            request,
+            f"Your {plan.name} plan allows {plan.max_hotels} hotel{'s' if plan.max_hotels != 1 else ''}. "
+            f"Upgrade to add more.",
+        )
+        return redirect("pricing")
 
     if request.method == "POST":
         form = HotelForm(request.POST)
@@ -423,10 +527,17 @@ def upload_images(request, slug):
         if not files and "image" in request.FILES:
             files = [request.FILES["image"]]
 
+        import math
         allowed_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
         max_bytes = 5 * 1024 * 1024  # 5 MB per file
+        plan = hotel_obj.hotel_owner.current_plan
+        current_count = hotel_obj.hotel_images.count()
+        remaining = (plan.limit_for("max_images_per_hotel") if plan else math.inf) - current_count
         accepted, rejected = [], []
         for f in files:
+            if len(accepted) >= remaining:
+                rejected.append(f"{f.name} (plan limit reached)")
+                continue
             if f.content_type not in allowed_types:
                 rejected.append(f"{f.name} (unsupported type)")
                 continue
@@ -520,6 +631,17 @@ def manage_rooms(request, slug):
 @login_required(login_url="vendor_login")
 def add_room(request, slug):
     hotel_obj = _vendor_owned_hotel_or_403(request, slug)
+    vendor = hotel_obj.hotel_owner
+    current_rooms = hotel_obj.rooms.count()
+    if not vendor.has_room_for("max_rooms_per_hotel", current_rooms):
+        plan = vendor.current_plan
+        messages.warning(
+            request,
+            f"Your {plan.name} plan allows {plan.max_rooms_per_hotel} rooms per hotel. "
+            f"Upgrade to add more.",
+        )
+        return redirect("pricing")
+
     if request.method == "POST":
         form = RoomForm(request.POST)
         if form.is_valid():
@@ -666,40 +788,39 @@ def update_profile(request):
 
 @login_required(login_url="vendor_login")
 def pay_charge(request, charge_id):
-    """Vendor confirms payment for a platform charge.
-
-    Demo mode (matches booking-payment flow): no real money moves. We just
-    flip the charge to PAID and email a confirmation. If the vendor was
-    overdue → blocked, marking paid unblocks their hotels automatically
-    (the blocked-vendor filter just checks for pending overdue charges).
-    """
     from .models import VendorCharge
 
     charge = get_object_or_404(
         VendorCharge.objects.select_related("vendor", "vendor__user"),
         pk=charge_id,
     )
-    # Ownership check — only the vendor who owes can pay it.
     if charge.vendor.user_id != request.user.id:
         raise PermissionDenied("Not your charge.")
-    if request.method != "POST":
-        return redirect("ven_dashboard")
+
     if charge.status != VendorCharge.Status.PENDING:
         messages.info(request, "That charge isn't pending.")
         return redirect("ven_dashboard")
 
-    charge.mark_paid()
-    messages.success(
-        request,
-        f"Payment received — ₹{charge.amount} ({charge.get_kind_display()}). Thanks!",
+    if request.method == "POST":
+        charge.mark_paid()
+        from .utils import sendChargePaidConfirmation
+        sendChargePaidConfirmation(charge)
+        return redirect("pay_charge_done", charge_id=charge.id)
+
+    return render(request, "vendor/pay_charge.html", {"charge": charge})
+
+
+@login_required(login_url="vendor_login")
+def pay_charge_done(request, charge_id):
+    from .models import VendorCharge
+
+    charge = get_object_or_404(
+        VendorCharge.objects.select_related("vendor", "vendor__user"),
+        pk=charge_id,
     )
-
-    # Best-effort email confirmation. Failure logs but doesn't break the flow.
-    from .utils import sendChargePaidConfirmation
-
-    sendChargePaidConfirmation(charge)
-
-    return redirect("ven_dashboard")
+    if charge.vendor.user_id != request.user.id:
+        raise PermissionDenied("Not your charge.")
+    return render(request, "vendor/pay_charge_done.html", {"charge": charge})
 
 
 def _client_ip(request):

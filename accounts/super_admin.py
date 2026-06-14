@@ -34,6 +34,48 @@ def _require_superuser(view):
 
 
 @_require_superuser
+def payments(request):
+    qs = (
+        VendorCharge.objects.select_related("vendor", "vendor__user")
+        .filter(status=VendorCharge.Status.PAID)
+        .order_by("-paid_at", "-id")
+    )
+
+    kind = (request.GET.get("kind") or "").strip()
+    q = (request.GET.get("q") or "").strip()
+    if kind:
+        qs = qs.filter(kind=kind)
+    if q:
+        qs = qs.filter(
+            Q(vendor__business_name__icontains=q)
+            | Q(vendor__user__email__icontains=q)
+            | Q(description__icontains=q)
+        )
+
+    totals = {
+        "count": qs.count(),
+        "sum_amount": qs.aggregate(s=Sum("amount"))["s"] or 0,
+        "all_time_count": VendorCharge.objects.filter(status=VendorCharge.Status.PAID).count(),
+        "all_time_sum": VendorCharge.objects.filter(status=VendorCharge.Status.PAID).aggregate(
+            s=Sum("amount")
+        )["s"]
+        or 0,
+    }
+
+    return render(
+        request,
+        "super_admin/payments.html",
+        {
+            "payments": qs[:200],
+            "totals": totals,
+            "kind_filter": kind or "all",
+            "q": q,
+            "kind_choices": VendorCharge.Kind.choices,
+        },
+    )
+
+
+@_require_superuser
 def dashboard(request):
     """Overview: vendor counts, charges totals, recent activity."""
     vendors_qs = (

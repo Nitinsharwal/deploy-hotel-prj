@@ -18,13 +18,14 @@ or fail safely), so an attacker can't hijack someone else's account by
 claiming an unverified email on a malicious provider.
 """
 
+import uuid
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth.models import User
 
 
 class AutoConnectByEmailAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
-        # Already linked to a local user — nothing to do.
         if sociallogin.is_existing:
             return
 
@@ -33,15 +34,24 @@ class AutoConnectByEmailAdapter(DefaultSocialAccountAdapter):
         if not email or not email_verified:
             return
 
-        # Find an existing User. We match by email field OR username (we use
-        # email as username in our register flow).
         existing = (
             User.objects.filter(email__iexact=email).first()
             or User.objects.filter(username__iexact=email).first()
         )
         if existing is None:
-            return  # let allauth create a new user via the normal auto-signup path
+            return
 
-        # Attach the social account to the existing user. allauth handles the
-        # rest (logging them in with the right session / backend).
+        if not existing.username:
+            existing.username = existing.email.lower() or f"user-{existing.pk}-{uuid.uuid4().hex[:6]}"
+            existing.save(update_fields=["username"])
+
         sociallogin.connect(request, existing)
+
+    def populate_user(self, request, sociallogin, data):
+        user = super().populate_user(request, sociallogin, data)
+        if not user.username:
+            email = (data.get("email") or "").lower()
+            user.username = email or f"user-{uuid.uuid4().hex[:10]}"
+        if User.objects.filter(username=user.username).exclude(pk=user.pk).exists():
+            user.username = f"{user.username[:140]}-{uuid.uuid4().hex[:6]}"
+        return user

@@ -4,9 +4,11 @@ from .models import (
     Booking,
     ContactMessage,
     Payment,
+    Plan,
     Review,
     Room,
     VendorCharge,
+    VendorSubscription,
     amenities,
     hotel_images,
     hotel_manager,
@@ -230,3 +232,20 @@ class ContactMessageAdmin(admin.ModelAdmin):
     @admin.action(description="Mark selected as SPAM")
     def mark_spam(self, request, queryset):
         queryset.update(status=ContactMessage.Status.SPAM)
+
+
+@admin.register(Plan)
+class PlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "price_monthly_inr", "max_hotels", "commission_percent", "is_active", "is_default", "sort_order")
+    list_filter = ("is_active", "is_default")
+    search_fields = ("name", "slug")
+    ordering = ("sort_order",)
+
+
+@admin.register(VendorSubscription)
+class VendorSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("vendor", "plan", "status", "period_start", "period_end", "created_at")
+    list_filter = ("status", "plan")
+    search_fields = ("vendor__business_name", "vendor__user__email")
+    autocomplete_fields = ("vendor", "plan")
+    date_hierarchy = "period_start"

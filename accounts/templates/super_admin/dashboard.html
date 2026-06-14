@@ -3,10 +3,15 @@
 {% block sa_body %}
 <div class="sa-wrap">
 
-  <h2 style="margin: 12px 0 18px;">
-    <i class="fa-solid fa-shield-halved" aria-hidden="true" style="color:#0f766e; margin-right:8px;"></i>
-    Vendor management
-  </h2>
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin: 12px 0 18px;">
+    <h2 style="margin: 0;">
+      <i class="fa-solid fa-shield-halved" aria-hidden="true" style="color:#0f766e; margin-right:8px;"></i>
+      Vendor management
+    </h2>
+    <a href="{% url 'super_payments' %}" style="background:#0f766e; color:#fff; padding:9px 16px; border-radius:10px; font-weight:700; text-decoration:none; font-size:14px;">
+      <i class="fa-solid fa-money-bill-wave" aria-hidden="true" style="margin-right:6px;"></i> Payments
+    </a>
+  </div>
 
   <div class="sa-stats">
     <div class="sa-stat">

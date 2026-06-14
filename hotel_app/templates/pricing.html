@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Pricing — Noma{% endblock %}
+{% block meta_description %}Simple, transparent pricing for hotel owners and chains. Start free, upgrade when you grow.{% endblock %}
+
+{% block head %}
+<style>
+  .pricing-hero { text-align: center; padding: clamp(40px, 6vw, 80px) 18px 24px; }
+  .pricing-hero p.eyebrow { color: #0f766e; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; margin: 0 0 8px; }
+  .pricing-hero h1 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.02em; margin: 0 0 12px; color: #0f172a; }
+  .pricing-hero p.lead { color: #475569; max-width: 560px; margin: 0 auto; font-size: clamp(15px, 1.4vw, 17px); line-height: 1.55; }
+
+  .pricing-grid {
+    max-width: 1100px; margin: 32px auto 64px; padding: 0 18px;
+    display: grid; gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  .plan-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 28px 24px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .plan-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(15,23,42,.08); }
+  .plan-card.popular {
+    border-color: #0f766e;
+    box-shadow: 0 16px 40px rgba(15,118,110,.15);
+    background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 60%);
+  }
+  .plan-card.popular::before {
+    content: "Most popular";
+    position: absolute; top: -12px; left: 24px;
+    background: #0f766e; color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .plan-card.current { border-color: #f59e0b; }
+  .plan-card.current::after {
+    content: "Your current plan";
+    position: absolute; top: -12px; right: 24px;
+    background: #f59e0b; color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .plan-name { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+  .plan-tagline { color: #64748b; font-size: 14px; margin: 0; }
+  .plan-price { display: flex; align-items: baseline; gap: 4px; margin: 8px 0 4px; }
+  .plan-price .amt { font-size: 38px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+  .plan-price .unit { color: #64748b; font-size: 14px; font-weight: 600; }
+  .plan-desc { font-size: 13px; color: #475569; line-height: 1.5; margin: 6px 0 12px; min-height: 40px; }
+  .plan-features { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .plan-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #1f2937; line-height: 1.5; }
+  .plan-features i.check { color: #10b981; font-size: 14px; margin-top: 4px; flex-shrink: 0; }
+  .plan-features li.muted { color: #94a3b8; }
+  .plan-features li.muted i.check { color: #cbd5e1; }
+  .plan-cta {
+    display: block; text-align: center; text-decoration: none;
+    padding: 12px 18px; border-radius: 10px;
+    font-weight: 700; font-size: 15px;
+    margin-top: 16px; transition: transform .15s ease, background .15s ease;
+  }
+  .plan-cta.primary { background: #0f766e; color: #fff; }
+  .plan-cta.primary:hover { background: #0b5c5c; transform: translateY(-1px); }
+  .plan-cta.secondary { background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0; }
+  .plan-cta.secondary:hover { background: #e2e8f0; }
+  .plan-cta.disabled { background: #f1f5f9; color: #94a3b8; pointer-events: none; }
+
+  .pricing-faq { max-width: 720px; margin: 48px auto; padding: 0 18px; }
+  .pricing-faq h2 { text-align: center; font-size: 24px; margin: 0 0 18px; color: #0f172a; }
+  .faq-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
+  .faq-item summary { cursor: pointer; font-weight: 700; color: #0f172a; }
+  .faq-item p { color: #475569; margin: 8px 0 0; font-size: 14px; line-height: 1.55; }
+</style>
+{% endblock %}
+
+{% block body %}
+<section class="pricing-hero">
+  <p class="eyebrow">Pricing</p>
+  <h1>Simple plans that grow with you</h1>
+  <p class="lead">Start free, upgrade when you need more. No setup fees, no surprises — cancel any time.</p>
+</section>
+
+<div class="pricing-grid">
+  {% for plan in plans %}
+    <div class="plan-card {% if plan.slug == 'pro' %}popular{% endif %} {% if current_plan and current_plan.slug == plan.slug %}current{% endif %}">
+      <h3 class="plan-name">{{ plan.name }}</h3>
+      <p class="plan-tagline">{{ plan.tagline }}</p>
+      <div class="plan-price">
+        <span class="amt">{% if plan.price_monthly_inr %}₹{{ plan.price_monthly_inr|floatformat:0 }}{% else %}Free{% endif %}</span>
+        {% if plan.price_monthly_inr %}<span class="unit">/month</span>{% endif %}
+      </div>
+      <p class="plan-desc">{{ plan.description }}</p>
+      <ul class="plan-features">
+        <li>
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>{% if plan.max_hotels %}{{ plan.max_hotels }} hotel{{ plan.max_hotels|pluralize }}{% else %}Unlimited hotels{% endif %}</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>{% if plan.max_rooms_per_hotel %}{{ plan.max_rooms_per_hotel }} rooms / hotel{% else %}Unlimited rooms per hotel{% endif %}</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>{% if plan.max_images_per_hotel %}{{ plan.max_images_per_hotel }} images / hotel{% else %}Unlimited images per hotel{% endif %}</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>{{ plan.commission_percent }}% platform commission</span>
+        </li>
+        <li class="{% if not plan.has_analytics %}muted{% endif %}">
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>Analytics dashboard</span>
+        </li>
+        <li class="{% if not plan.has_featured_listing %}muted{% endif %}">
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>Featured listing rotation</span>
+        </li>
+        <li class="{% if not plan.has_api_access %}muted{% endif %}">
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>API access</span>
+        </li>
+        <li class="{% if not plan.has_priority_support %}muted{% endif %}">
+          <i class="fa-solid fa-circle-check check"></i>
+          <span>Priority support</span>
+        </li>
+      </ul>
+      {% if current_plan and current_plan.slug == plan.slug %}
+        <span class="plan-cta disabled">Current plan</span>
+      {% elif is_vendor %}
+        <a href="{% url 'manage_plan' %}" class="plan-cta {% if plan.slug == 'pro' %}primary{% else %}secondary{% endif %}">Switch to {{ plan.name }}</a>
+      {% else %}
+        <a href="{% url 'vendor_register' %}" class="plan-cta {% if plan.slug == 'pro' %}primary{% else %}secondary{% endif %}">Get started</a>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<section class="pricing-faq">
+  <h2>Frequently asked questions</h2>
+  <details class="faq-item">
+    <summary>How does billing work?</summary>
+    <p>You're billed monthly in advance for paid plans. The first charge appears on your vendor dashboard with a 7-day grace period to pay before listings are paused.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Can I switch plans later?</summary>
+    <p>Yes, you can upgrade or downgrade at any time from the vendor dashboard. Downgrades take effect at the end of your current billing cycle so you keep paid features until then.</p>
+  </details>
+  <details class="faq-item">
+    <summary>What's the platform commission?</summary>
+    <p>We take a small percentage of each confirmed booking (10% on Free, 7% on Pro, 3% on Enterprise). It's deducted automatically from your payout.</p>
+  </details>
+  <details class="faq-item">
+    <summary>What happens if I exceed my plan limit?</summary>
+    <p>Existing hotels, rooms, and images stay live. You won't be able to add new ones until you upgrade or delete existing items.</p>
+  </details>
+</section>
+{% endblock %}

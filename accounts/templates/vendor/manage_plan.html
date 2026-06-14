@@ -1,0 +1,150 @@
+{% extends "vendor/ven_base.html" %}
+{% load static %}
+{% block title %}Manage plan — Noma{% endblock %}
+
+{% block head %}
+<style>
+  .plan-wrap { max-width: 1100px; margin: 24px auto; padding: 0 18px; display: grid; gap: 18px; }
+  .plan-current {
+    background: linear-gradient(135deg, #0f766e, #134e4a); color: #fff;
+    border-radius: 18px; padding: 24px 26px; box-shadow: 0 10px 30px rgba(15,118,110,.25);
+    display: grid; gap: 14px;
+  }
+  .plan-current .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #99f6e4; }
+  .plan-current .name { font-size: 28px; font-weight: 800; margin: 0; }
+  .plan-current .price { font-size: 15px; color: #ccfbf1; }
+  .plan-current .cycle { font-size: 13px; color: #99f6e4; }
+  .plan-current .cancelled-notice {
+    background: rgba(255,255,255,.12); border-radius: 10px; padding: 10px 14px;
+    font-size: 13px; line-height: 1.5;
+  }
+
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .usage-card {
+    background: rgba(255,255,255,.1); border-radius: 12px; padding: 14px 16px;
+  }
+  .usage-card .ulabel { font-size: 11px; text-transform: uppercase; color: #99f6e4; letter-spacing: 0.08em; }
+  .usage-card .uvalue { font-size: 22px; font-weight: 800; margin: 4px 0; }
+  .usage-card .ubar { background: rgba(255,255,255,.15); border-radius: 999px; height: 6px; overflow: hidden; }
+  .usage-card .ubar > span { display: block; height: 100%; background: #5eead4; border-radius: 999px; }
+
+  .plans-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .opt-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .opt-card:hover { border-color: #94a3b8; transform: translateY(-2px); }
+  .opt-card.current { border-color: #f59e0b; background: #fffbeb; }
+  .opt-name { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; }
+  .opt-price { color: #475569; font-size: 14px; margin: 0; }
+  .opt-feat { font-size: 13px; color: #475569; margin: 6px 0 0; line-height: 1.5; }
+  .opt-action {
+    margin-top: auto; padding-top: 10px;
+  }
+  .opt-action button, .opt-action span.is-current {
+    width: 100%; padding: 10px 14px; border-radius: 10px;
+    font-weight: 700; font-size: 14px; border: none; cursor: pointer;
+    display: inline-block; text-align: center;
+  }
+  .opt-action .upgrade { background: #0f766e; color: #fff; }
+  .opt-action .upgrade:hover { background: #0b5c5c; }
+  .opt-action .downgrade { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .opt-action .downgrade:hover { background: #e2e8f0; }
+  .opt-action .is-current { background: #fef3c7; color: #92400e; cursor: default; }
+
+  h2.section { font-size: 18px; margin: 8px 0 4px; color: #0f172a; }
+  p.section-sub { color: #64748b; font-size: 14px; margin: 0 0 8px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="plan-wrap">
+  <div class="plan-current">
+    <div>
+      <p class="label">Your plan</p>
+      <h2 class="name">{{ current.name }}</h2>
+      <p class="price">
+        {% if current.price_monthly_inr %}
+          ₹{{ current.price_monthly_inr|floatformat:0 }} / month
+        {% else %}
+          Free forever
+        {% endif %}
+      </p>
+      {% if subscription %}
+        <p class="cycle">Current billing cycle: {{ subscription.period_start }} → {{ subscription.period_end }}</p>
+      {% endif %}
+    </div>
+
+    {% if subscription and subscription.status == "cancelled" %}
+      <div class="cancelled-notice">
+        <strong>Downgrade scheduled.</strong>
+        You'll switch to the Free plan after {{ subscription.period_end }}. Until then, your paid features stay active.
+      </div>
+    {% endif %}
+
+    <div class="usage-grid">
+      <div class="usage-card">
+        <div class="ulabel">Hotels</div>
+        <div class="uvalue">
+          {{ usage.hotels_used }}{% if usage.hotels_max %} / {{ usage.hotels_max }}{% else %} <span style="font-size:13px; color:#99f6e4;">unlimited</span>{% endif %}
+        </div>
+        {% if usage.hotels_max %}<div class="ubar"><span style="width: {{ usage.hotels_pct }}%;"></span></div>{% endif %}
+      </div>
+      <div class="usage-card">
+        <div class="ulabel">Rooms / hotel</div>
+        <div class="uvalue">
+          {% if current.max_rooms_per_hotel %}{{ current.max_rooms_per_hotel }}{% else %}<span style="font-size:18px;">Unlimited</span>{% endif %}
+        </div>
+      </div>
+      <div class="usage-card">
+        <div class="ulabel">Images / hotel</div>
+        <div class="uvalue">
+          {% if current.max_images_per_hotel %}{{ current.max_images_per_hotel }}{% else %}<span style="font-size:18px;">Unlimited</span>{% endif %}
+        </div>
+      </div>
+      <div class="usage-card">
+        <div class="ulabel">Commission</div>
+        <div class="uvalue">{{ current.commission_percent }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">Change plan</h2>
+  <p class="section-sub">Upgrades start immediately and create a new invoice. Downgrades take effect at the end of your current billing cycle.</p>
+
+  <div class="plans-options">
+    {% for plan in plans %}
+      <div class="opt-card {% if current and current.slug == plan.slug %}current{% endif %}">
+        <h3 class="opt-name">{{ plan.name }}</h3>
+        <p class="opt-price">
+          {% if plan.price_monthly_inr %}₹{{ plan.price_monthly_inr|floatformat:0 }} / mo{% else %}Free{% endif %}
+          · {{ plan.commission_percent }}% commission
+        </p>
+        <p class="opt-feat">{{ plan.description }}</p>
+
+        <div class="opt-action">
+          {% if current and current.slug == plan.slug %}
+            <span class="is-current">Current</span>
+          {% else %}
+            <form method="post" action="{% url 'change_plan' plan.slug %}">
+              {% csrf_token %}
+              {% if current and plan.price_monthly_inr < current.price_monthly_inr %}
+                <button type="submit" class="downgrade"
+                        onclick="return confirm('Downgrade to {{ plan.name }} at the end of this cycle?');">
+                  Downgrade to {{ plan.name }}
+                </button>
+              {% else %}
+                <button type="submit" class="upgrade"
+                        onclick="return confirm('Switch to {{ plan.name }} now? An invoice for ₹{{ plan.price_monthly_inr|floatformat:0 }} will be added.');">
+                  Switch to {{ plan.name }}
+                </button>
+              {% endif %}
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

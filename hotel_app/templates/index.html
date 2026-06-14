@@ -23,10 +23,15 @@
   </div>
 </section>
 
-<form method="GET" class="search-shell" id="explore">
+<form method="GET" class="search-shell" id="explore"
+      hx-get="{% url 'home' %}"
+      hx-trigger="input changed delay:300ms from:#searchInput, change from:#sortBy, submit"
+      hx-target="#hotel-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true">
   <div class="search-input">
     <i class="fa-solid fa-magnifying-glass"></i>
-    <input type="text" name="search" id="searchInput" value="{{ q.search }}" placeholder="Search by hotel or city...">
+    <input type="text" name="search" id="searchInput" value="{{ q.search }}" placeholder="Search by hotel or city..." autocomplete="off">
   </div>
   <div class="search-filters">
     <label class="sort-compact">
@@ -140,48 +145,7 @@
   </div>
 </div>
 
-<div class="restaurant-slider">
-  {% for hotel in Hotel %}
-  <a href="{% url "hotel_details" hotel.hotel_slug %}" class="card-link">
-    <div class="hotel-card">
-      <div class="hotel-media">
-        {% if hotel.hotel_images.first and hotel.hotel_images.first.image %}
-          <img src="{{ hotel.hotel_images.first.image.url }}" alt="{{ hotel.hotel_name }}">
-        {% else %}
-          <img src="{% static "hotel_app/images/no_image.jpg" %}" alt="{{ hotel.hotel_name }}">
-        {% endif %}
-        <div class="media-overlay">
-          <div class="hotel-name">{{ hotel.hotel_name }}</div>
-          <div class="hotel-location">📍 {{ hotel.hotel_location|truncatechars:38 }}</div>
-        </div>
-        <div class="media-badge">₹ {{ hotel.hotel_offer_price }} / night</div>
-      </div>
-      <div class="hotel-body">
-        <div class="price-row">
-          <div>
-            <span class="price-current">₹ {{ hotel.hotel_offer_price }}</span>
-            <span class="price-old">₹ {{ hotel.hotel_price }}</span>
-          </div>
-          <span class="pill success">Instant confirm</span>
-        </div>
-        {% if hotel.rating_count %}
-          <div class="hotel-rating">★ {{ hotel.rating_avg }} <small class="muted" style="font-weight:500;">({{ hotel.rating_count }})</small></div>
-        {% endif %}
-        <p class="muted two-lines">{{ hotel.hotel_description|truncatechars:110 }}</p>
-        <div class="amenity-row">
-          {% for amenity in hotel.hotel_amenities.all|slice:":4" %}
-            <span class="amenity-badge">{{ amenity.amenities_name }}</span>
-          {% endfor %}
-        </div>
-        <div class="card-actions">
-          <span class="night-note">per night</span>
-          <span class="btn-pill">View details</span>
-        </div>
-      </div>
-    </div>
-  </a>
-  {% empty %}
-    <p style="padding: 12px 18px;">No hotels found. Try a different search.</p>
-  {% endfor %}
+<div id="hotel-grid" class="restaurant-slider htmx-target-fade">
+  {% include "_hotel_grid.html" %}
 </div>
 {% endblock %}

@@ -141,23 +141,46 @@ def sendVendorWelcome(vendor, request=None):
             "Add your first hotel and start receiving bookings:",
             f"  {site_url}/account/ven_dashboard/",
             "",
-            "— Noma Hotel · vendors@nomahotel.com",
+            "— Noma Hotel · nomapvtltd@gmail.com",
         ]
     )
     subject = "Welcome aboard — Noma Vendor portal"
     return _safe_send_mail(subject, text_body, vendor.user.email, html_body)
 
 
-def sendChargeReminder(charge):
-    """Email a vendor that a platform charge is due (or overdue).
+def sendPlanInvoiceEmail(vendor, charge, plan, request=None):
+    """Sent right after a vendor switches to a paid plan."""
+    from django.template.loader import render_to_string
 
-    No ``request`` arg here — this is called from the
-    ``send_charge_reminders`` management command (cron), where there is
-    no HTTP request to derive a host from. get_site_url() falls back to
-    SITE_URL env / ALLOWED_HOSTS, so make sure SITE_URL is set in your
-    production env (Render/Vercel dashboard) for these reminder mails to
-    link to the live site.
-    """
+    site_url = get_site_url(request)
+    pay_url = f"{site_url}/account/charges/{charge.id}/pay/"
+    ctx = {
+        "vendor": vendor,
+        "charge": charge,
+        "plan": plan,
+        "site_url": site_url,
+        "pay_url": pay_url,
+    }
+    html_body = render_to_string("emails/plan_invoice.html", ctx)
+    text_body = "\n".join([
+        f"Hi {vendor.business_name},",
+        "",
+        f"Your plan has been switched to {plan.name}.",
+        "",
+        f"Invoice: ₹{charge.amount} for {plan.name} monthly subscription",
+        f"Due by:  {charge.due_date.strftime('%d %b %Y')}",
+        "",
+        f"Pay now: {pay_url}",
+        "",
+        "Your hotels stay live as long as the invoice is paid within the grace period.",
+        "",
+        "— Noma Hotel · nomapvtltd@gmail.com",
+    ])
+    subject = f"[Noma] Invoice ₹{charge.amount} — {plan.name} plan"
+    return _safe_send_mail(subject, text_body, vendor.user.email, html_body)
+
+
+def sendChargeReminder(charge):
     from django.template.loader import render_to_string
 
     site_url = get_site_url()
@@ -237,11 +260,6 @@ def sendChargePaidConfirmation(charge):
 
 
 def sendContactNotification(msg):
-    """Email the ops team that a new Contact Us message just came in.
-
-    Ops address falls back to EMAIL_USER (the SMTP login email) so it works
-    out of the box without any extra env var. Override with CONTACT_OPS_EMAIL.
-    """
     from django.conf import settings as _s
 
     ops = (
@@ -370,21 +388,6 @@ def sendForgotPasswordEmail(user, otp, token, request=None):
 
 
 def _safe_send_mail(subject, text_body, recipient, html_body):
-    """Fire-and-forget email send. Returns immediately (True) — the SMTP
-    work happens on a daemon thread so the HTTP request can return.
-
-    Why this changed: synchronous send_mail() blocks the gunicorn worker
-    on socket.connect() — if Gmail is slow or Render's network hiccups,
-    the worker hits its 30s timeout and gets SIGKILL'd, returning a 500
-    to the user. With a background thread the worker returns in <50ms;
-    the email arrives a few seconds later (or doesn't, in which case
-    we log it and move on — same as before).
-
-    The thread is `daemon=True` so it dies cleanly when gunicorn restarts
-    the worker. A few in-flight emails could be lost on deploy/scale —
-    acceptable trade-off for non-critical mail (welcome, OTP, slip).
-    Critical mail (payment receipts) should move to a real queue later.
-    """
     def _send():
         try:
             send_mail(
@@ -407,9 +410,9 @@ def random_token():
     return str(uuid.uuid4())
 
 
-def sendEmail(email, token):
+def sendEmail(email, token, request=None):
     subject = "Welcome to Noma Hotel - Please Verify Your Account"
-    verify_url = f"https://sharwal-nitin-hotel.vercel.app/account/verify-account/{token}"
+    verify_url = f"{get_site_url(request)}/account/verify-account/{token}"
 
     text_body = (
         "Dear Guest,\n\n"

@@ -8,7 +8,12 @@
     <h2>Manage your hotels</h2>
     <p class="muted">Edit details, upload gallery images, and track bookings in one place.</p>
   </div>
-  <a class="btn-primary" href="{% url 'add_hotel' %}">+ Add Hotel</a>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <a href="{% url 'manage_plan' %}" style="padding: 10px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #0f172a; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+      <i class="fa-solid fa-gem" aria-hidden="true" style="color: #0f766e;"></i> Manage plan
+    </a>
+    <a class="btn-primary" href="{% url 'add_hotel' %}">+ Add Hotel</a>
+  </div>
 </div>
 
 {# ===== Platform charges (subscription / publishing fee / etc.) ===== #}
@@ -129,12 +134,9 @@
                 </span>
               </td>
               <td data-label="Action">
-                <form method="POST" action="{% url 'pay_charge' c.id %}" style="margin:0;">
-                  {% csrf_token %}
-                  <button class="pay-btn" type="submit">
-                    <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Pay
-                  </button>
-                </form>
+                <a class="pay-btn" href="{% url 'pay_charge' c.id %}" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-credit-card" aria-hidden="true"></i> Pay
+                </a>
               </td>
             </tr>
           {% endfor %}

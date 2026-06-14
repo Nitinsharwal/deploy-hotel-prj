@@ -24,6 +24,9 @@
   <link rel="apple-touch-icon" href="{% static 'hotel_app/images/logohootel.png' %}">
   <link rel="manifest" href="{% static 'manifest.json' %}">
 
+  {# Smooth same-origin page fade — Chrome 126+, Safari 18+, graceful fallback elsewhere. #}
+  <meta name="view-transition" content="same-origin">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {% comment %}
@@ -32,7 +35,7 @@
     in the filename), so browsers + Render's edge will otherwise keep serving
     a stale copy until cookies/cache are cleared.
   {% endcomment %}
-  <link rel="stylesheet" href="{% static 'hotel_app/css/style.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'hotel_app/css/style.css' %}?v=7">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
         integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
         crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -40,6 +43,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  <div class="hx-progress" aria-hidden="true"></div>
   {% include "navbar.html" %}
   {% include "alert.html" %}
 
@@ -76,6 +80,10 @@
     </div>
   </footer>
 
+  <script src="https://unpkg.com/htmx.org@2.0.4"
+          integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+          crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.7/dist/cdn.min.js"></script>
   <script src="{% static 'hotel_app/JS/script.js' %}"></script>
   <script>
     // Password visibility toggle (any icon with .toggle-password)
@@ -92,6 +100,11 @@
         });
       });
     });
+  </script>
+  <script>
+    document.body.addEventListener('htmx:beforeRequest', () => document.body.classList.add('htmx-request'));
+    document.body.addEventListener('htmx:afterRequest',  () => document.body.classList.remove('htmx-request'));
+    document.body.addEventListener('htmx:responseError', () => document.body.classList.remove('htmx-request'));
   </script>
   {% include "chatbot-widget.html" %}
 </body>

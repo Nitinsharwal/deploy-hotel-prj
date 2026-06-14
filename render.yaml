@@ -24,3 +24,33 @@ services:
       - key: DEBUG
         value: "False"
 
+  - type: cron
+    name: bill-subscriptions
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    schedule: "0 2 * * *"   # 02:00 UTC every day
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py bill_subscriptions
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: DEBUG
+        value: "False"
+
+  - type: cron
+    name: send-charge-reminders
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    schedule: "0 3 * * *"   # 03:00 UTC every day
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py send_charge_reminders
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: DEBUG
+        value: "False"
+

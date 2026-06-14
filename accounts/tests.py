@@ -106,3 +106,71 @@ def test_batch_image_upload_creates_multiple_rows(client, tmp_path):
     resp = client.post(reverse("upload_images", args=[hotel.hotel_slug]), {"images": [f1, f2, bad]})
     assert resp.status_code == 302
     assert hotel_images.objects.filter(hotel=hotel).count() == 2  # txt rejected
+
+
+@pytest.mark.django_db
+def test_bill_subscriptions_renews_paid_plan_and_creates_invoice():
+    from datetime import timedelta
+    from django.core.management import call_command
+    from django.utils import timezone
+    from accounts.models import Plan, VendorCharge, VendorSubscription, hotel_vendor
+
+    user = User.objects.create_user(username="renew@x.com", email="renew@x.com", password="pw")
+    vendor = hotel_vendor.objects.create(user=user, business_name="Renew Co", phone_number="111")
+    pro = Plan.objects.get(slug=Plan.SLUG_PRO)
+
+    today = timezone.localdate()
+    sub = VendorSubscription.objects.create(
+        vendor=vendor,
+        plan=pro,
+        status=VendorSubscription.Status.ACTIVE,
+        period_start=today - timedelta(days=31),
+        period_end=today - timedelta(days=1),
+    )
+
+    call_command("bill_subscriptions")
+
+    sub.refresh_from_db()
+    assert sub.status == VendorSubscription.Status.EXPIRED
+
+    new_sub = VendorSubscription.objects.filter(
+        vendor=vendor, status=VendorSubscription.Status.ACTIVE
+    ).first()
+    assert new_sub is not None
+    assert new_sub.plan == pro
+    assert new_sub.period_start == today
+
+    charge = VendorCharge.objects.filter(vendor=vendor, kind=VendorCharge.Kind.SUBSCRIPTION).first()
+    assert charge is not None
+    assert charge.amount == pro.price_monthly_inr
+
+
+@pytest.mark.django_db
+def test_bill_subscriptions_executes_scheduled_downgrade_to_free():
+    from datetime import timedelta
+    from django.core.management import call_command
+    from django.utils import timezone
+    from accounts.models import Plan, VendorSubscription, hotel_vendor
+
+    user = User.objects.create_user(username="dn@x.com", email="dn@x.com", password="pw")
+    vendor = hotel_vendor.objects.create(user=user, business_name="Down Co", phone_number="222")
+    pro = Plan.objects.get(slug=Plan.SLUG_PRO)
+    free = Plan.objects.get(slug=Plan.SLUG_FREE)
+
+    today = timezone.localdate()
+    VendorSubscription.objects.create(
+        vendor=vendor,
+        plan=pro,
+        status=VendorSubscription.Status.CANCELLED,
+        period_start=today - timedelta(days=31),
+        period_end=today - timedelta(days=1),
+        cancelled_at=timezone.now(),
+    )
+
+    call_command("bill_subscriptions")
+
+    new_sub = VendorSubscription.objects.filter(
+        vendor=vendor, status=VendorSubscription.Status.ACTIVE
+    ).first()
+    assert new_sub is not None
+    assert new_sub.plan == free

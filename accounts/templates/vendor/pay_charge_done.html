@@ -1,0 +1,95 @@
+{% extends "vendor/ven_base.html" %}
+{% block title %}Payment received — Noma{% endblock %}
+
+{% block head %}
+<meta http-equiv="refresh" content="2.5; url={% url 'manage_plan' %}">
+<style>
+  .done-wrap {
+    min-height: calc(100vh - 200px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px 18px;
+  }
+  .done-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 22px;
+    padding: 48px 36px; box-shadow: 0 20px 60px rgba(15,118,110,.18);
+    text-align: center; max-width: 440px; width: 100%;
+    animation: cardIn .45s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+  @keyframes cardIn {
+    0% { transform: translateY(20px) scale(.96); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  .check-circle {
+    width: 96px; height: 96px; margin: 0 auto 18px;
+    background: #d1fae5; border-radius: 50%;
+    display: grid; place-items: center;
+    position: relative;
+    animation: pop .55s cubic-bezier(.2,.9,.3,1.4) both;
+  }
+  @keyframes pop {
+    0% { transform: scale(.4); opacity: 0; }
+    70% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .check-circle::before {
+    content: ""; position: absolute; inset: -6px; border-radius: 50%;
+    border: 3px solid #10b981;
+    animation: ring .9s ease-out both;
+  }
+  @keyframes ring {
+    0% { transform: scale(.6); opacity: .8; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  .check-circle svg { width: 48px; height: 48px; stroke: #10b981; }
+  .check-circle svg path {
+    fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 50; stroke-dashoffset: 50;
+    animation: drawCheck .45s .25s cubic-bezier(.65,0,.45,1) forwards;
+  }
+  @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+  h1.done-title {
+    font-size: 26px; margin: 8px 0 6px; color: #0f172a; letter-spacing: -0.01em;
+  }
+  p.done-amt {
+    font-size: 14px; color: #475569; margin: 0 0 16px;
+  }
+  p.done-amt strong { color: #0f766e; }
+
+  .done-redirect {
+    font-size: 12px; color: #94a3b8;
+    margin-top: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .spinner {
+    width: 12px; height: 12px; border: 2px solid #e2e8f0;
+    border-top-color: #0f766e; border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="done-wrap">
+  <div class="done-card">
+    <div class="check-circle" aria-hidden="true">
+      <svg viewBox="0 0 50 50"><path d="M14 26 L22 34 L37 18"/></svg>
+    </div>
+    <h1 class="done-title">Payment successful</h1>
+    <p class="done-amt">
+      <strong>₹ {{ charge.amount }}</strong> · {{ charge.get_kind_display }}
+    </p>
+    <p class="done-redirect">
+      <span class="spinner"></span>
+      Redirecting…
+    </p>
+  </div>
+</div>
+<script>
+  setTimeout(function () { window.location.href = "{% url 'manage_plan' %}"; }, 2000);
+</script>
+{% endblock %}

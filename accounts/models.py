@@ -36,6 +36,31 @@ class hotel_vendor(models.Model):
     def overdue_charges(self):
         return [c for c in self.charges.filter(status="pending") if c.is_overdue]
 
+    @property
+    def current_subscription(self):
+        return (
+            self.subscriptions.filter(status="active")
+            .select_related("plan")
+            .order_by("-period_start")
+            .first()
+        )
+
+    @property
+    def current_plan(self):
+        cached = getattr(self, "_current_plan_cache", None)
+        if cached is not None:
+            return cached
+        sub = self.current_subscription
+        plan = sub.plan if sub else Plan.objects.filter(is_default=True, is_active=True).first()
+        self._current_plan_cache = plan
+        return plan
+
+    def has_room_for(self, key, current_count):
+        plan = self.current_plan
+        if not plan:
+            return True
+        return current_count < plan.limit_for(key)
+
 
 class amenities(models.Model):
     amenities_name = models.CharField(max_length=191)
@@ -503,3 +528,73 @@ class PasswordResetToken(models.Model):
 
         self.used_at = timezone.now()
         self.save(update_fields=["used_at"])
+
+
+class Plan(models.Model):
+    SLUG_FREE = "free"
+    SLUG_PRO = "pro"
+    SLUG_ENTERPRISE = "enterprise"
+
+    slug = models.SlugField(max_length=32, unique=True)
+    name = models.CharField(max_length=50)
+    tagline = models.CharField(max_length=120, blank=True)
+    description = models.TextField(blank=True)
+    price_monthly_inr = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    # max_* NULL = unlimited
+    max_hotels = models.PositiveIntegerField(null=True, blank=True)
+    max_rooms_per_hotel = models.PositiveIntegerField(null=True, blank=True)
+    max_images_per_hotel = models.PositiveIntegerField(null=True, blank=True)
+
+    has_analytics = models.BooleanField(default=False)
+    has_featured_listing = models.BooleanField(default=False)
+    has_api_access = models.BooleanField(default=False)
+    has_priority_support = models.BooleanField(default=False)
+    commission_percent = models.DecimalField(max_digits=5, decimal_places=2, default=10)
+
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "price_monthly_inr"]
+
+    def __str__(self):
+        return self.name
+
+    def limit_for(self, key):
+        import math
+        return getattr(self, key) or math.inf
+
+
+class VendorSubscription(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        CANCELLED = "cancelled", "Cancelled (ends at period end)"
+        EXPIRED = "expired", "Expired"
+
+    vendor = models.ForeignKey(hotel_vendor, on_delete=models.CASCADE, related_name="subscriptions")
+    plan = models.ForeignKey(Plan, on_delete=models.PROTECT, related_name="subscriptions")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+
+    period_start = models.DateField()
+    period_end = models.DateField()
+
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-period_start", "-created_at"]
+        indexes = [
+            models.Index(fields=["vendor", "status"], name="sub_vendor_status_idx"),
+            models.Index(fields=["status", "period_end"], name="sub_status_period_end_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.vendor.business_name} · {self.plan.name} ({self.period_start} → {self.period_end})"

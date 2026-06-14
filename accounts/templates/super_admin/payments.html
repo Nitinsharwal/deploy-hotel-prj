@@ -1,0 +1,84 @@
+{% extends "super_admin/_base.html" %}
+{% block title %}Super Admin · Payments{% endblock %}
+{% block sa_body %}
+<div class="sa-wrap">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+    <div>
+      <h1 style="margin:0 0 4px;">Payments</h1>
+      <p style="margin:0; color:#64748b; font-size:14px;">All settled vendor charges, newest first.</p>
+    </div>
+    <a href="{% url 'super_dashboard' %}" style="font-size:13px; color:#0f766e; text-decoration:none;">← Back to dashboard</a>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+    <div class="sa-card">
+      <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">Filtered</div>
+      <div style="font-size:24px; font-weight:800; margin-top:4px;">{{ totals.count }}</div>
+      <div style="font-size:13px; color:#475569;">payments · ₹{{ totals.sum_amount }}</div>
+    </div>
+    <div class="sa-card">
+      <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">All time</div>
+      <div style="font-size:24px; font-weight:800; margin-top:4px;">{{ totals.all_time_count }}</div>
+      <div style="font-size:13px; color:#475569;">payments · ₹{{ totals.all_time_sum }}</div>
+    </div>
+  </div>
+
+  <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; background:#fff; border:1px solid #e2e8f0; padding:12px 14px; border-radius:12px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search business / email / description"
+           style="flex:1 1 220px; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font:inherit;">
+    <select name="kind" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font:inherit; background:#fff;">
+      <option value="">All kinds</option>
+      {% for value, label in kind_choices %}
+        <option value="{{ value }}" {% if kind_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="background:#0f766e; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-weight:700; cursor:pointer;">Filter</button>
+    {% if q or kind_filter != "all" %}
+      <a href="{% url 'super_payments' %}" style="align-self:center; font-size:13px; color:#64748b; text-decoration:none;">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if payments %}
+    <table class="sa">
+      <thead>
+        <tr>
+          <th>Paid at</th>
+          <th>Vendor</th>
+          <th>Kind</th>
+          <th>Description</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+          <tr>
+            <td data-label="Paid at">{{ p.paid_at|date:"d M Y, H:i" }}</td>
+            <td data-label="Vendor">
+              <a href="{% url 'super_vendor_detail' p.vendor.id %}" style="color:#0f766e; text-decoration:none; font-weight:700;">
+                {{ p.vendor.business_name }}
+              </a>
+              <div style="font-size:12px; color:#64748b;">{{ p.vendor.user.email }}</div>
+            </td>
+            <td data-label="Kind">
+              <span style="background:#f0fdfa; color:#0f766e; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">
+                {{ p.get_kind_display }}
+              </span>
+            </td>
+            <td data-label="Description">{{ p.description|default:"—" }}</td>
+            <td data-label="Amount" style="text-align:right; font-weight:800; color:#0f172a;">₹ {{ p.amount }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if totals.count > 200 %}
+      <p style="font-size:12px; color:#64748b; margin-top:10px;">Showing latest 200 of {{ totals.count }} payments.</p>
+    {% endif %}
+  {% else %}
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:40px; text-align:center; color:#64748b;">
+      <div style="font-size:32px; margin-bottom:8px;">💸</div>
+      <h3 style="margin:0 0 4px; color:#0f172a;">No payments yet</h3>
+      <p style="margin:0; font-size:14px;">Vendor charges that get paid will appear here.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from . import super_admin as views
 
 urlpatterns = [
     path("", views.dashboard, name="super_dashboard"),
+    path("payments/", views.payments, name="super_payments"),
     path("vendors/<int:vendor_id>/", views.vendor_detail, name="super_vendor_detail"),
     path("vendors/<int:vendor_id>/verify/", views.toggle_verified, name="super_toggle_verified"),
     path("vendors/<int:vendor_id>/charges/new/", views.create_charge, name="super_create_charge"),
