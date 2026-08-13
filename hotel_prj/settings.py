@@ -292,12 +292,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 host_user = os.getenv("EMAIL_USER")
 host_pass = os.getenv("EMAIL_PASSWORD")
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.smtp.EmailBackend"
-    if host_user and host_pass
-    else "django.core.mail.backends.console.EmailBackend",
-)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", host_user or "noreply@example.com")
+
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "hotel_prj.email_backend.ResendEmailBackend"
+elif host_user and host_pass:
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
