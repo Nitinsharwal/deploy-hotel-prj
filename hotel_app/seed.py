@@ -1,12 +1,9 @@
 import random
 from random import choice
-
 from faker import Faker
-
 from accounts.models import *
 
 fake = Faker()
-
 
 def createUser():
     for _ in range(19):

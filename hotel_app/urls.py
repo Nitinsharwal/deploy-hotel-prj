@@ -12,7 +12,7 @@ urlpatterns = [
     path("my_bookings/", views.my_bookings, name="my_bookings"),
     path("bookings/<reference>/cancel/", views.cancel_booking, name="cancel_booking"),
     path("bookings/<reference>/review/", views.submit_review, name="submit_review"),
-    # Payments (DEMO MODE — Razorpay verify/webhook routes disabled, see views.py)
+    # Payments (DEMO MODE — Razorpay)
     path("bookings/<reference>/pay/", views.payment_checkout, name="payment_checkout"),
     path("bookings/<reference>/pay/confirm/", views.dummy_pay, name="dummy_pay"),
     path("bookings/<reference>/pay/success/", views.payment_success, name="payment_success"),

@@ -1,17 +1,6 @@
-"""Sitemap definitions — registered in hotel_prj/urls.py.
-
-Two sitemaps live here:
-  * StaticViewSitemap — hand-listed static pages (home, about, contact)
-  * HotelSitemap     — every active hotel's detail page (auto-discovered)
-
-Crawlers like Google fetch /sitemap.xml on a schedule and index pages from there.
-"""
-
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
-
 from accounts.models import hotels
-
 
 class StaticViewSitemap(Sitemap):
     priority = 0.5
@@ -25,8 +14,6 @@ class StaticViewSitemap(Sitemap):
 
 
 class HotelSitemap(Sitemap):
-    """Every active hotel listing — high priority, monthly change."""
-
     priority = 0.8
     changefreq = "monthly"
 

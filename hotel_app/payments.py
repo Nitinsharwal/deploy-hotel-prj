@@ -15,12 +15,6 @@ def _client():
 
 
 def create_order(booking):
-    """Create (or reuse) a Razorpay Order for this booking's pending Payment.
-
-    Returns a dict with the data the frontend needs to launch checkout.js:
-      { "order_id", "key_id", "amount_paise", "currency",
-        "name", "description", "prefill_email", "prefill_contact" }
-    """
     payment = (
         booking.payments.filter(status=Payment.Status.INITIATED).order_by("-created_at").first()
     )

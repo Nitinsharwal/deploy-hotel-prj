@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -10,10 +9,8 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-
 from accounts.models import Booking, Payment, amenities, hotels
 from accounts.utils import sendCustomer
-
 from . import payments as gateway
 from .forms import BookingForm, ReviewForm
 
@@ -33,8 +30,6 @@ def _parse_decimal(value):
     except (TypeError, InvalidOperation):
         return None
 
-
-# Cache key constants — also referenced by accounts/signals.py to invalidate.
 CACHE_KEY_BLOCKED_VENDORS = "blocked_vendor_ids"
 CACHE_KEY_HOME_PREFIX = "home_hotels"  # full key: f"{prefix}:{params_hash}"
 CACHE_TTL_BLOCKED = 5 * 60  # 5 min, signal-busted on save
@@ -42,13 +37,8 @@ CACHE_TTL_HOME = 60  # 1 min — listings refresh quickly
 
 
 def _compute_blocked_vendor_ids():
-    """Underlying computation — bypasses cache. Used by the cached wrapper
-    below and by tests that want to assert exact state.
-    """
     from datetime import timedelta
-
     from django.utils import timezone
-
     from accounts.models import VendorCharge
 
     today = timezone.now().date()
@@ -64,39 +54,17 @@ def _compute_blocked_vendor_ids():
 
 
 def _blocked_vendor_ids():
-    """Cached IDs of vendors whose hotels should be hidden from the public site.
-
-    A vendor is "blocked" if they have at least one PENDING VendorCharge
-    that's past its grace period (due_date + grace_days).
-
-    Cached for CACHE_TTL_BLOCKED. Signals on VendorCharge.save() invalidate
-    immediately when status flips to PAID/WAIVED — so a vendor who pays sees
-    their hotels reappear without waiting for the TTL.
-    """
     from django.core.cache import cache
-
     cached = cache.get(CACHE_KEY_BLOCKED_VENDORS)
     if cached is not None:
         return cached
     result = _compute_blocked_vendor_ids()
-    # Cache the FROZEN set so callers can't accidentally mutate the shared
-    # cache value (LocMemCache returns the same object reference each get).
     cache.set(CACHE_KEY_BLOCKED_VENDORS, frozenset(result), CACHE_TTL_BLOCKED)
     return result
 
 
 def _home_cache_key(get_params):
-    """Stable cache key for the home-page hotel list, built from the
-    relevant filter / sort GET params. Sorted so ?a=1&b=2 and ?b=2&a=1
-    map to the same cache entry. Amenity list is sorted too.
-
-    The key also includes a version counter (incremented by signal handlers
-    in accounts/signals.py whenever a hotel / review / vendor charge changes).
-    Bumping the version effectively invalidates *every* cached filter combo
-    in one operation — works on any cache backend, no `delete_pattern` needed.
-    """
     import hashlib
-
     from django.core.cache import cache
 
     parts = []
@@ -118,14 +86,6 @@ def _home_cache_key(get_params):
 
 def home(request):
     from django.core.cache import cache
-
-    # Hot path: if we've computed this exact filter combination in the last
-    # CACHE_TTL_HOME seconds, reuse the result. We cache the *list* of hotels
-    # (forcing queryset evaluation) so the cached object has no live DB cursor.
-    # Note: this is anon-and-auth shared because the user-specific bits
-    # (navbar, bottom bar) live in templates, not in this data. Different
-    # users browsing the same filters see the same hotel grid — which is what
-    # we want.
     cache_key = _home_cache_key(request.GET)
     cached_hotels = cache.get(cache_key)
 
@@ -192,15 +152,10 @@ def home(request):
         else:
             qs = qs.order_by("-rating_avg", "hotel_name")
 
-        # Force-evaluate to a list before caching. The list contains model
-        # instances with their prefetch_related caches intact — the template
-        # can iterate without hitting the DB again.
         cached_hotels = list(qs.distinct())
         cache.set(cache_key, cached_hotels, CACHE_TTL_HOME)
 
     context = {
-        # `cached_hotels` is a plain list, prefetch caches intact — the
-        # template iterates it identically to a queryset.
         "Hotel": cached_hotels,
         "all_amenities": amenities.objects.all(),
         "q": {
@@ -225,8 +180,6 @@ def hotel_details(request, slug):
         hotels.objects.prefetch_related("rooms").select_related("hotel_owner"),
         hotel_slug=slug,
     )
-    # If the owner has overdue platform charges, hide the hotel from the
-    # public site (the vendor can still see + manage it from their dashboard).
     if hotel_obj.hotel_owner_id in _blocked_vendor_ids():
         # Customer never knows the URL existed.
         from django.http import Http404
@@ -237,9 +190,6 @@ def hotel_details(request, slug):
         form = BookingForm(request.POST, hotel=hotel_obj, user=request.user)
         if form.is_valid():
             booking = form.save()
-            # Record the initial payment attempt as INITIATED. A real payment
-            # gateway callback would later flip this to SUCCESS and bump the
-            # booking to CONFIRMED.
             Payment.objects.create(
                 booking=booking,
                 amount=booking.total_amount,
@@ -261,9 +211,6 @@ def hotel_details(request, slug):
             for err in errs:
                 messages.error(request, f"{field}: {err}")
     else:
-        # Pre-fill guest details from the user's account so they don't retype.
-        # Phone lives on the hotel_owner profile (if the user is a customer);
-        # fall back to empty if they don't have one yet.
         user = request.user
         phone = ""
         owner = getattr(user, "owner_profile", None)
@@ -297,7 +244,6 @@ def hotel_details(request, slug):
 
 @login_required(login_url="/account/login_page/")
 def submit_review(request, reference):
-    """Only the booking owner can review, and only after the stay is completed."""
     booking = get_object_or_404(Booking, reference=reference)
     if booking.user_id != request.user.id:
         raise PermissionDenied("Not your booking.")
@@ -336,7 +282,6 @@ def my_bookings(request):
 @login_required(login_url="/account/login_page/")
 def cancel_booking(request, reference):
     booking = get_object_or_404(Booking, reference=reference)
-    # Owner check: only the guest who made it, or staff, can cancel.
     if booking.user_id != request.user.id and not request.user.is_staff:
         raise PermissionDenied("Not your booking.")
     if not booking.is_cancellable:
@@ -345,7 +290,6 @@ def cancel_booking(request, reference):
 
     booking.cancel(reason=request.POST.get("reason", "")[:500])
 
-    # Best-effort refund — never block the user-facing cancel on the gateway being slow/down.
     if settings.RAZORPAY_KEY_SECRET:
         status, detail = gateway.refund_booking(booking)
         if status == "refunded":
@@ -392,12 +336,6 @@ def pricing(request):
 
 
 def contact(request):
-    """Public Contact Us page — renders the form, processes the POST.
-
-    On success: persist a ContactMessage, fire off (a) an ops notification
-    email to the team, (b) an ack email to the submitter, then PRG-redirect
-    to ?sent=1 so a browser refresh doesn't resubmit.
-    """
     from accounts.utils import sendContactAck, sendContactNotification
 
     from .forms import ContactForm
@@ -448,22 +386,8 @@ def contact(request):
         },
     )
 
-
-# ---------- Payment (DEMO MODE) ----------
-# Real Razorpay integration lives in hotel_app/payments.py — kept intact for
-# when you're ready to switch back. To re-enable: paste real keys into .env,
-# revert payment_checkout/payment_verify below to the Razorpay versions
-# (see git history), and re-add the razorpay_webhook URL.
-
-
 @login_required(login_url="/account/login_page/")
 def payment_checkout(request, reference):
-    """DEMO MODE — render a simulated checkout page.
-
-    No real money moves. The user sees a polished mock checkout, clicks
-    "Pay now" (which POSTs to /pay/confirm/), and the booking gets confirmed
-    immediately. A receipt slip is emailed and made downloadable.
-    """
     booking = get_object_or_404(
         Booking.objects.select_related("room", "room__hotel"),
         reference=reference,
@@ -480,11 +404,6 @@ def payment_checkout(request, reference):
 @require_POST
 @login_required(login_url="/account/login_page/")
 def dummy_pay(request, reference):
-    """DEMO MODE confirm — marks the booking paid + emails the slip.
-
-    Idempotent: if the booking is already CONFIRMED we just bounce them to
-    the success page without re-emailing.
-    """
     booking = get_object_or_404(
         Booking.objects.select_related("room", "room__hotel"),
         reference=reference,
@@ -521,13 +440,7 @@ def dummy_pay(request, reference):
 
         booking.status = Booking.Status.CONFIRMED
         booking.save(update_fields=["status", "updated_at"])
-
-        # Email the slip — best-effort; failure logs but doesn't block the user.
         from accounts.utils import sendBookingSlip
-
-        # Pass `request` so the email's "view slip" link uses the same
-        # host the customer just booked from (live URL in prod, not the
-        # SITE_URL env default which is set to localhost for dev).
         sendBookingSlip(booking, request=request)
 
     return redirect("payment_success", reference=booking.reference)
@@ -557,12 +470,6 @@ def dummy_pay(request, reference):
 
 @login_required(login_url="/account/login_page/")
 def booking_slip(request, reference):
-    """Render a printable/downloadable booking receipt.
-
-    The same template is reused for the email (renders to a string before
-    sending). Users land here via 'Download slip' on payment_success or
-    'View slip' from my bookings.
-    """
     booking = get_object_or_404(
         Booking.objects.select_related("room", "room__hotel", "user"),
         reference=reference,
@@ -574,7 +481,6 @@ def booking_slip(request, reference):
 
 @login_required(login_url="/account/login_page/")
 def payment_success(request, reference):
-    """Friendly landing page after a successful payment."""
     booking = get_object_or_404(Booking, reference=reference)
     if booking.user_id != request.user.id:
         raise PermissionDenied("Not your booking.")
