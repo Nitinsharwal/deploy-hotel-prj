@@ -1,7 +1,6 @@
 import hashlib
 import hmac
 import logging
-
 import razorpay
 from django.conf import settings
 

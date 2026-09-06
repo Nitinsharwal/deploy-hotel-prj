@@ -31,9 +31,9 @@ def _parse_decimal(value):
         return None
 
 CACHE_KEY_BLOCKED_VENDORS = "blocked_vendor_ids"
-CACHE_KEY_HOME_PREFIX = "home_hotels"  # full key: f"{prefix}:{params_hash}"
-CACHE_TTL_BLOCKED = 5 * 60  # 5 min, signal-busted on save
-CACHE_TTL_HOME = 60  # 1 min — listings refresh quickly
+CACHE_KEY_HOME_PREFIX = "home_hotels" 
+CACHE_TTL_BLOCKED = 5 * 60
+CACHE_TTL_HOME = 60 
 
 
 def _compute_blocked_vendor_ids():
@@ -88,8 +88,6 @@ def home(request):
     from django.core.cache import cache
     cache_key = _home_cache_key(request.GET)
     cached_hotels = cache.get(cache_key)
-
-    # ---- Parse params (always — they get echoed back into the form) ----
     search_query = (request.GET.get("search") or "").strip()
     location = (request.GET.get("location") or "").strip()
     max_price = _parse_decimal(request.GET.get("max_price"))
@@ -103,7 +101,6 @@ def home(request):
         qs = hotels.objects.filter(is_active=True).prefetch_related(
             "hotel_amenities", "hotel_images"
         )
-        # Hide hotels whose vendor has overdue platform charges.
         blocked = _blocked_vendor_ids()
         if blocked:
             qs = qs.exclude(hotel_owner_id__in=blocked)
@@ -132,9 +129,6 @@ def home(request):
                 .filter(n_match=len(amenity_ids))
             )
         if start and end and end > start:
-            # Keep only hotels that have at least one room with free inventory
-            # over the requested window. We compute this in Python rather than a
-            # single SQL window query for clarity at this scale.
             available_hotel_ids = []
             for h in qs.prefetch_related("rooms__bookings"):
                 for r in h.rooms.filter(is_active=True):
@@ -300,7 +294,6 @@ def cancel_booking(request, reference):
         elif status == "nothing-to-refund":
             messages.success(request, f"Booking {booking.reference} cancelled.")
         else:
-            # Cancellation already saved; surface a non-fatal note.
             messages.warning(
                 request,
                 f"Booking {booking.reference} cancelled, but refund could not be processed automatically. "
@@ -346,15 +339,12 @@ def contact(request):
             msg = form.save(commit=False)
             if request.user.is_authenticated:
                 msg.user = request.user
-            # Capture light request metadata for triage / spam analysis.
             xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
             msg.ip_address = (
                 xff.split(",")[0].strip() if xff else request.META.get("REMOTE_ADDR")
             ) or None
             msg.user_agent = (request.META.get("HTTP_USER_AGENT") or "")[:255]
             msg.save()
-
-            # Best-effort emails — never block the success path on SMTP.
             sendContactNotification(msg)
             sendContactAck(msg)
 

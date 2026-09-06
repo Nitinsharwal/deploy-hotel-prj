@@ -12,12 +12,6 @@ def _make_reference():
 
 
 class BookingForm(forms.ModelForm):
-    """Customer-facing booking form.
-
-    The view passes the `hotel` so we can scope the room dropdown and enforce
-    availability against the chosen room's inventory.
-    """
-
     room = forms.ModelChoiceField(queryset=Room.objects.none())
     payment_method = forms.ChoiceField(
         choices=[
@@ -99,15 +93,6 @@ class ReviewForm(forms.ModelForm):
 
 
 class ContactForm(forms.ModelForm):
-    """Public Contact Us form.
-
-    Honeypot trick: bots usually fill every input they see. The `website`
-    field is hidden via CSS — humans never touch it, bots fill it, we drop
-    the submission. Cheap + works against ~90% of dumb scrapers without any
-    captcha friction.
-    """
-
-    # Anti-spam honeypot — must remain blank.
     website = forms.CharField(
         required=False,
         widget=forms.TextInput(

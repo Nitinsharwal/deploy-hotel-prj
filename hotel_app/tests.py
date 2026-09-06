@@ -1,10 +1,8 @@
 from datetime import date, timedelta
 from decimal import Decimal
-
 import pytest
 from django.contrib.auth.models import User
 from django.urls import reverse
-
 from accounts.models import Booking, Payment, Review, Room, hotel_vendor, hotels
 from hotel_app.forms import BookingForm
 
@@ -67,8 +65,6 @@ def test_home_lists_active_hotels(client, hotel):
 
 @pytest.mark.django_db
 def test_home_filter_by_max_price_excludes_pricier(client, hotel, vendor):
-    # Underscore signals "we don't reference the row — just need it in the DB
-    # so the home page can include/exclude it via the price filter".
     hotels.objects.create(
         hotel_name="Pricey Palace",
         hotel_description="x",
