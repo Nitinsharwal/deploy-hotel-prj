@@ -1,25 +1,4 @@
-"""
-Custom allauth SocialAccountAdapter.
-
-Why we need this:
-- `SOCIALACCOUNT_EMAIL_AUTHENTICATION` only links to users that have a
-  verified `account_emailaddress` row managed by allauth.
-- Users registered via our own `register_page` view (created with
-  `User.objects.create_user(...)`) do NOT have that row, so the auto-link
-  silently fails and allauth shows its "/accounts/3rdparty/signup/" form.
-- This adapter closes that gap: on every social login it checks for an
-  existing User with the same email and connects (links) the social account
-  to it, treating the Google-verified email as trustworthy.
-
-Trust model: Google's `email_verified` claim is included in the OAuth ID
-token. We require it before auto-linking — if Google did NOT verify the
-email, we let allauth's default flow run (which will show the signup form
-or fail safely), so an attacker can't hijack someone else's account by
-claiming an unverified email on a malicious provider.
-"""
-
 import uuid
-
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth.models import User
 

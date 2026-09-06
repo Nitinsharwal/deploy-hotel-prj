@@ -1,40 +1,3 @@
-"""Bulk-upload everything in MEDIA_ROOT to the configured Cloudinary cloud.
-
-WHY a separate command:
-    Django's ``default_storage`` switches to Cloudinary when
-    ``CLOUDINARY_CLOUD_NAME`` is set, but that only affects NEW uploads. Files
-    already sitting at ``./media/hotels/foo.jpg`` on the developer's laptop
-    must be copied to Cloudinary once, otherwise the production site will
-    show broken images for every existing Hotel.image / Vendor.profile_image.
-
-WHAT this does:
-    1. Walks ``MEDIA_ROOT`` recursively.
-    2. For each file, computes the storage key by stripping ``MEDIA_ROOT``
-       from the path — so ``./media/hotels/foo.jpg`` → ``hotels/foo.jpg``.
-       That matches the key stored in the FileField column, so no DB rows
-       need to change after the upload.
-    3. Skips files that already exist in Cloudinary unless ``--force`` is
-       passed (idempotent — safe to re-run).
-
-USAGE:
-    # First time — uploads everything:
-    python manage.py migrate_media_to_cloudinary
-
-    # Force re-upload (e.g. you compressed local images and want Cloudinary
-    # to mirror the new versions):
-    python manage.py migrate_media_to_cloudinary --force
-
-    # Preview only:
-    python manage.py migrate_media_to_cloudinary --dry-run
-
-PRECONDITIONS:
-    - .env / Render env has CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET set.
-    - ``django-cloudinary-storage`` + ``cloudinary`` installed (requirements.txt).
-    - settings.py auto-flips DEFAULT_FILE_STORAGE to the Cloudinary backend
-      when CLOUDINARY_CLOUD_NAME is set, so this command relies on
-      ``default_storage`` already pointing at Cloudinary by the time it runs.
-"""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -101,11 +64,6 @@ class Command(BaseCommand):
         failed = 0
 
         for path in files:
-            # Storage key relative to MEDIA_ROOT. This matches what Django
-            # stored in the FileField column when the file was first uploaded
-            # via the local FileSystemStorage backend — so post-migration,
-            # every existing DB row's `.url` resolves to a Cloudinary URL
-            # without any SQL update.
             key = str(path.relative_to(media_root))
 
             try:
@@ -124,8 +82,6 @@ class Command(BaseCommand):
                 uploaded += 1
 
             except Exception as exc:
-                # Don't let one bad file kill the run. Operator can fix the
-                # underlying issue and re-run with --force later.
                 failed += 1
                 self.stderr.write(
                     self.style.ERROR(f"  fail   {key}: {exc.__class__.__name__}: {exc}")

@@ -1,5 +1,3 @@
-"""Idempotent seed for the Free / Pro / Enterprise plan rows."""
-
 from __future__ import annotations
 
 from decimal import Decimal

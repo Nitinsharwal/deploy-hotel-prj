@@ -153,7 +153,6 @@ class Room(models.Model):
 
 
 class Booking(models.Model):
-    """A booking lifecycle record. Replaces the legacy `customers` model."""
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending payment"

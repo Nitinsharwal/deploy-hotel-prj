@@ -16,13 +16,6 @@ from .models import (
 
 
 def _require_superuser(view):
-    """Return 404 to anyone who isn't a superuser.
-
-    We use 404 (not 403) intentionally — to anyone snooping, the URL simply
-    doesn't exist. Standard "security through obscurity isn't security" still
-    applies; this is defense in depth, not authentication.
-    """
-
     def wrapper(request, *args, **kwargs):
         u = request.user
         if not (u.is_authenticated and u.is_superuser):
@@ -258,16 +251,6 @@ def create_charge(request, vendor_id):
 
 @_require_superuser
 def edit_charge(request, charge_id):
-    """GET → render edit form; POST → save changes.
-
-    Only fields that still make sense after creation are editable:
-    amount, description, due_date, grace_days, kind, linked hotel, notes.
-    The vendor and creation timestamp stay immutable for audit clarity.
-
-    Only PENDING charges are editable — once PAID or WAIVED the row is
-    treated as a financial record. Need to fix something afterwards?
-    Delete and re-create.
-    """
     charge = get_object_or_404(
         VendorCharge.objects.select_related("vendor"),
         pk=charge_id,

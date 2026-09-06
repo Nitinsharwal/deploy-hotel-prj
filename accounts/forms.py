@@ -87,12 +87,6 @@ class HotelForm(forms.ModelForm):
 
 
 class ProfileForm(forms.Form):
-    """Lets the user edit the small set of fields they care about: name + phone
-    (on the User + hotel_owner profile). We deliberately do NOT expose email
-    here — changing email touches auth + allauth EmailAddress rows and deserves
-    its own confirmation flow.
-    """
-
     first_name = forms.CharField(max_length=150, required=False)
     last_name = forms.CharField(max_length=150, required=False)
     phone_number = forms.CharField(max_length=20, required=False)

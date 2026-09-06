@@ -1,21 +1,3 @@
-"""
-Daily housekeeping: email vendors whose platform charges are inside the
-reminder window — from 5 days before the due date through the end of the
-grace period (default 15 days after due date).
-
-Schedule once per day. Examples:
-
-  # crontab
-  0 9 * * *  cd /path/to/deploy-hotel-prj && /path/to/.venv/bin/python manage.py send_charge_reminders
-
-  # Render cron job
-  command: python manage.py send_charge_reminders
-  schedule: 0 9 * * *
-
-Idempotent: a `last_reminded_at` timestamp on each VendorCharge prevents
-double-emails inside the same UTC day, so re-runs are safe.
-"""
-
 import logging
 
 from django.core.management.base import BaseCommand

@@ -702,25 +702,17 @@ def delete_room(request, slug, room_id):
 
 @login_required(login_url="login_page")
 def profile(request):
-    """The personal dashboard: account details + booking history + reviews + stats."""
-    # Avoid circular import; Booking/Review live in accounts.models so this is fine.
     from django.db.models import Count, Sum
 
     from .models import Booking, Review
 
     user = request.user
-    owner = getattr(user, "owner_profile", None)  # may be None for vendors / superusers
-
-    # Bookings — one queryset, partitioned in template by status.
+    owner = getattr(user, "owner_profile", None) 
     bookings_qs = (
         Booking.objects.filter(user=user)
         .select_related("room", "room__hotel")
         .prefetch_related("payments")
     )
-    # Status-based partitioning happens in the template via {% if b.status == 'pending' %}
-    # blocks — keeping it there means one queryset, no extra DB round-trips.
-
-    # Stats — one DB round-trip each. With ~hundreds of bookings per user this is fine.
     stat_counts = bookings_qs.aggregate(
         total=Count("id"),
         confirmed=Count("id", filter=models_Q(status=Booking.Status.CONFIRMED)),
@@ -768,7 +760,6 @@ def profile(request):
 
 @login_required(login_url="login_page")
 def update_profile(request):
-    """Handle the profile-edit POST. Always redirects back to /account/profile/."""
     if request.method != "POST":
         return redirect("profile")
     owner = getattr(request.user, "owner_profile", None)

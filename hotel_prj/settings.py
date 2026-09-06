@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -22,7 +21,6 @@ ALLOWED_HOSTS = [
 if not DEBUG and not ALLOWED_HOSTS:
     raise RuntimeError("ALLOWED_HOSTS must be set when DEBUG=False.")
 
-# CSRF trusted origins (full scheme+host) — required for HTTPS POSTs on Vercel/Render etc.
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()
 ]
@@ -102,9 +100,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # Injects `hb_ctx` (chatbot auto-fill) into every template
-                # render. Cheap: returns immediately for anonymous users;
-                # one indexed SELECT for logged-in users.
                 "accounts.context_processors.chatbot_context",
             ],
         },
@@ -153,8 +148,6 @@ def _database_config_from_env():
         if config:
             return {"default": config}
 
-    # Legacy MYSQL_* names are still accepted during the transition so existing
-    # deployments keep working until the environment variables are renamed.
     host = _getenv("POSTGRES_HOST", "PGHOST", "MYSQL_HOST")
     if host:
         config = {
